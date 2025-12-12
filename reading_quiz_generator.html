@@ -1,0 +1,1764 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reading Quiz Generator</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            background: linear-gradient(180deg, #ffffff 0%, #e1e2c3 100%);
+            min-height: 100vh;
+            color: #2d3436;
+        }
+        
+        .container {
+            max-width: 1500px;
+            margin: 0 auto;
+            padding: 30px;
+        }
+        
+        /* 홈 버튼 */
+        .home-btn {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 18px;
+            background: #ffffff;
+            border: 2px solid #e1e2c3;
+            border-radius: 30px;
+            color: #7a8450;
+            font-weight: 600;
+            font-size: 0.9rem;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            z-index: 100;
+            box-shadow: 0 2px 10px rgba(0, 184, 148, 0.1);
+        }
+        
+        .home-btn:hover {
+            background: #7a8450;
+            color: #fff;
+            border-color: #7a8450;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0, 184, 148, 0.3);
+        }
+        
+        .home-btn svg {
+            width: 18px;
+            height: 18px;
+            fill: currentColor;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding: 30px;
+            background: #ffffff;
+            border-radius: 20px;
+            border: 2px solid #e1e2c3;
+            box-shadow: 0 4px 20px rgba(0, 184, 148, 0.08);
+        }
+        
+        h1 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #1a1a1a;
+            margin-bottom: 10px;
+        }
+        
+        h1 span {
+            background: linear-gradient(135deg, #7a8450, #b7c687);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .subtitle {
+            color: #636e72;
+            font-size: 1rem;
+        }
+        
+        .ai-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 16px;
+            background: linear-gradient(135deg, #7a8450, #b7c687);
+            border-radius: 30px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-top: 12px;
+            color: #fff;
+            box-shadow: 0 4px 12px rgba(0, 184, 148, 0.25);
+        }
+        
+        .main-content {
+            display: grid;
+            grid-template-columns: 420px 1fr;
+            gap: 30px;
+        }
+        
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        .card {
+            background: #ffffff;
+            border-radius: 20px;
+            padding: 25px;
+            border: 2px solid #e1e2c3;
+            box-shadow: 0 4px 15px rgba(0, 184, 148, 0.05);
+        }
+        
+        .section-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #7a8450;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: #1a1a1a;
+        }
+        
+        .section-title::before {
+            content: '';
+            width: 8px;
+            height: 8px;
+            background: #7a8450;
+            border-radius: 50%;
+        }
+        
+        /* API 키 영역 */
+        .api-section {
+            padding: 15px;
+            background: #f8f7f2;
+            border-radius: 12px;
+            border: 1px solid #e1e2c3;
+        }
+        
+        .api-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9rem;
+            margin-bottom: 12px;
+            color: #2d3436;
+        }
+        
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #7a8450;
+            animation: pulse 2s infinite;
+        }
+        
+        .status-dot.disconnected {
+            background: #e74c3c;
+            animation: none;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        .api-input {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e1e2c3;
+            border-radius: 10px;
+            background: #ffffff;
+            color: #2d3436;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+        }
+        
+        .api-input:focus {
+            outline: none;
+            border-color: #7a8450;
+            box-shadow: 0 0 0 3px rgba(0, 184, 148, 0.1);
+        }
+        
+        .api-btn {
+            width: 100%;
+            margin-top: 10px;
+            padding: 12px;
+            background: linear-gradient(135deg, #7a8450, #b7c687);
+            border: none;
+            border-radius: 10px;
+            color: #fff;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .api-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 184, 148, 0.3);
+        }
+        
+        .api-hint {
+            margin-top: 10px;
+            font-size: 0.75rem;
+            color: #636e72;
+        }
+        
+        /* 지문 입력 영역 */
+        .passage-textarea {
+            width: 100%;
+            min-height: 180px;
+            padding: 15px;
+            border: 2px dashed #d4d9b8;
+            border-radius: 15px;
+            background: #fdfcf9;
+            color: #2d3436;
+            font-size: 0.95rem;
+            line-height: 1.8;
+            resize: vertical;
+            transition: all 0.3s ease;
+        }
+        
+        .passage-textarea:hover {
+            border-color: #7a8450;
+            background: #f8f7f2;
+        }
+        
+        .passage-textarea:focus {
+            outline: none;
+            border-color: #7a8450;
+            border-style: solid;
+            background: #ffffff;
+            box-shadow: 0 0 0 3px rgba(0, 184, 148, 0.1);
+        }
+        
+        .passage-textarea::placeholder {
+            color: #95a5a6;
+        }
+        
+        .char-count {
+            margin-top: 10px;
+            text-align: right;
+            font-size: 0.8rem;
+            color: #636e72;
+        }
+        
+        .char-count span {
+            color: #7a8450;
+            font-weight: 600;
+        }
+        
+        /* 문항 유형 선택 */
+        .type-category {
+            margin-bottom: 15px;
+        }
+        
+        .category-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 12px;
+            background: #fdfcf9;
+            border-radius: 10px;
+            margin-bottom: 8px;
+        }
+        
+        .category-badge {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            min-width: 50px;
+            text-align: center;
+        }
+        
+        .badge-meaning { background: linear-gradient(135deg, #7a8450, #b7c687); color: #fff; }
+        .badge-detail { background: linear-gradient(135deg, #0984e3, #0770c7); color: #fff; }
+        .badge-inference { background: linear-gradient(135deg, #9b59b6, #8e44ad); color: #fff; }
+        .badge-grammar { background: linear-gradient(135deg, #f39c12, #e67e22); color: #fff; }
+        .badge-vocab { background: linear-gradient(135deg, #3498db, #2980b9); color: #fff; }
+        .badge-logic { background: linear-gradient(135deg, #e74c3c, #c0392b); color: #fff; }
+        
+        .category-name {
+            flex: 1;
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: #636e72;
+        }
+        
+        .sub-types {
+            padding-left: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        
+        .type-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 12px;
+            background: #ffffff;
+            border-radius: 10px;
+            border: 2px solid #f0f0f0;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .type-item:hover {
+            background: #fdfcf9;
+            border-color: #e1e2c3;
+        }
+        
+        .type-item.selected {
+            background: #e8f8f5;
+            border-color: #7a8450;
+        }
+        
+        .type-item.disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+        
+        .type-checkbox {
+            width: 20px;
+            height: 20px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            flex-shrink: 0;
+        }
+        
+        .type-item.selected .type-checkbox {
+            background: #7a8450;
+            border-color: #7a8450;
+        }
+        
+        .type-checkbox::after {
+            content: '✓';
+            color: #fff;
+            font-size: 0.75rem;
+            font-weight: bold;
+            opacity: 0;
+            transform: scale(0);
+            transition: all 0.2s ease;
+        }
+        
+        .type-item.selected .type-checkbox::after {
+            opacity: 1;
+            transform: scale(1);
+        }
+        
+        .type-name {
+            font-size: 0.85rem;
+            color: #636e72;
+        }
+        
+        .type-item.selected .type-name {
+            color: #2d3436;
+            font-weight: 500;
+        }
+        
+        /* 선택 현황 */
+        .selection-info {
+            padding: 12px 15px;
+            background: #fffbeb;
+            border-radius: 10px;
+            border: 1px solid #ffeaa7;
+            margin-top: 15px;
+        }
+        
+        .selection-count {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.9rem;
+        }
+        
+        .count-text {
+            color: #636e72;
+        }
+        
+        .count-number {
+            font-weight: 700;
+            font-size: 1.1rem;
+            color: #f39c12;
+        }
+        
+        .count-number.max {
+            color: #e74c3c;
+        }
+        
+        .selected-types {
+            margin-top: 10px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+        
+        .selected-tag {
+            padding: 4px 10px;
+            background: #e1e2c3;
+            border-radius: 15px;
+            font-size: 0.75rem;
+            color: #7a8450;
+            font-weight: 500;
+        }
+        
+        /* 버튼 */
+        .btn {
+            width: 100%;
+            padding: 15px;
+            border: none;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #7a8450, #b7c687);
+            color: #fff;
+            margin-top: 15px;
+            box-shadow: 0 4px 15px rgba(0, 184, 148, 0.3);
+        }
+        
+        .btn-primary:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 184, 148, 0.4);
+        }
+        
+        .btn-primary:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .btn-secondary {
+            background: linear-gradient(135deg, #f39c12, #e67e22);
+            color: #fff;
+            margin-top: 12px;
+            box-shadow: 0 4px 15px rgba(243, 156, 18, 0.3);
+        }
+        
+        .btn-secondary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(243, 156, 18, 0.4);
+        }
+        
+        .btn-download {
+            background: linear-gradient(135deg, #0984e3, #0770c7);
+            color: #fff;
+            margin-top: 12px;
+            box-shadow: 0 4px 15px rgba(9, 132, 227, 0.3);
+        }
+        
+        .btn-download:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(9, 132, 227, 0.4);
+        }
+        
+        /* 결과 영역 */
+        .result-area {
+            background: #ffffff;
+            border-radius: 20px;
+            padding: 25px;
+            border: 2px solid #e1e2c3;
+            min-height: 500px;
+            box-shadow: 0 4px 15px rgba(0, 184, 148, 0.05);
+        }
+        
+        .result-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        
+        .result-stats {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+        
+        .stat-item {
+            padding: 8px 16px;
+            background: #fdfcf9;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            border: 1px solid #e1e2c3;
+            color: #2d3436;
+        }
+        
+        .stat-item span {
+            color: #7a8450;
+            font-weight: 600;
+        }
+        
+        /* 문제 카드 */
+        .question-list {
+            display: flex;
+            flex-direction: column;
+            gap: 25px;
+        }
+        
+        .question-card {
+            background: #fdfcf9;
+            border-radius: 15px;
+            padding: 25px;
+            border: 2px solid #e1e2c3;
+            transition: all 0.3s ease;
+        }
+        
+        .question-card:hover {
+            border-color: #7a8450;
+            box-shadow: 0 4px 20px rgba(0, 184, 148, 0.1);
+        }
+        
+        .question-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .question-number {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #7a8450;
+        }
+        
+        .question-type-badge {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+        
+        .question-instruction {
+            font-size: 0.9rem;
+            color: #636e72;
+            margin-bottom: 15px;
+            padding: 12px 15px;
+            background: #ffffff;
+            border-radius: 10px;
+            border-left: 3px solid #7a8450;
+        }
+        
+        .question-passage {
+            font-size: 0.95rem;
+            line-height: 1.8;
+            margin-bottom: 20px;
+            padding: 20px;
+            background: #ffffff;
+            border-radius: 10px;
+            border: 1px solid #e1e2c3;
+            white-space: pre-wrap;
+            max-height: 200px;
+            overflow-y: auto;
+            color: #2d3436;
+        }
+        
+        .question-text {
+            margin-bottom: 15px;
+            padding: 12px 15px;
+            background: #e8f8f5;
+            border-radius: 10px;
+            border-left: 3px solid #7a8450;
+            color: #2d3436;
+        }
+        
+        .question-choices {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .choice-item {
+            padding: 12px 15px;
+            background: #ffffff;
+            border-radius: 10px;
+            font-size: 0.9rem;
+            border: 2px solid #f0f0f0;
+            transition: all 0.3s ease;
+            color: #2d3436;
+        }
+        
+        .choice-item.correct {
+            border: 2px solid #7a8450;
+            background: #e8f8f5;
+        }
+        
+        .choice-number {
+            font-weight: 600;
+            color: #7a8450;
+            margin-right: 8px;
+        }
+        
+        .answer-section {
+            margin-top: 15px;
+            padding: 12px 15px;
+            background: #e8f8f5;
+            border-radius: 10px;
+            border: 1px solid #d4d9b8;
+        }
+        
+        .answer-label {
+            font-size: 0.9rem;
+            color: #7a8450;
+            font-weight: 600;
+        }
+        
+        /* 빈 상태 */
+        .empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 400px;
+            color: #b2bec3;
+        }
+        
+        .empty-icon {
+            font-size: 5rem;
+            margin-bottom: 20px;
+            opacity: 0.5;
+        }
+        
+        .empty-text {
+            font-size: 1.1rem;
+            margin-bottom: 10px;
+            color: #636e72;
+        }
+        
+        .empty-subtext {
+            font-size: 0.9rem;
+            color: #b2bec3;
+        }
+        
+        /* 로딩 */
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 50px;
+        }
+        
+        .loading.show {
+            display: block;
+        }
+        
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid #e1e2c3;
+            border-top-color: #7a8450;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .loading-text {
+            color: #636e72;
+            font-size: 0.95rem;
+        }
+        
+        .loading-progress {
+            margin-top: 15px;
+            padding: 10px 20px;
+            background: #fffbeb;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            color: #f39c12;
+            display: inline-block;
+            border: 1px solid #ffeaa7;
+        }
+        
+        /* 토스트 */
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            padding: 15px 25px;
+            background: #ffffff;
+            border-radius: 12px;
+            color: #2d3436;
+            font-size: 0.9rem;
+            z-index: 1000;
+            transform: translateY(100px);
+            opacity: 0;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+        }
+        
+        .toast.show {
+            transform: translateY(0);
+            opacity: 1;
+        }
+        
+        .toast.success {
+            border-left: 4px solid #7a8450;
+        }
+        
+        .toast.error {
+            border-left: 4px solid #e74c3c;
+        }
+        
+        /* 반응형 */
+        @media (max-width: 1200px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+            
+            .home-btn {
+                position: relative;
+                top: 0;
+                left: 0;
+                margin-bottom: 20px;
+                width: fit-content;
+            }
+        }
+        
+        @media (max-width: 600px) {
+            .container {
+                padding: 15px;
+            }
+            
+            h1 {
+                font-size: 1.5rem;
+            }
+            
+            .subtitle {
+                font-size: 0.9rem;
+            }
+            
+            .ai-badge {
+                font-size: 0.75rem;
+                padding: 6px 12px;
+            }
+            
+            .card {
+                padding: 18px;
+                border-radius: 15px;
+            }
+            
+            .section-title {
+                font-size: 1rem;
+            }
+            
+            .home-btn {
+                position: relative;
+                top: 0;
+                left: 0;
+                margin-bottom: 15px;
+            }
+            
+            .passage-textarea {
+                min-height: 150px;
+                font-size: 0.9rem;
+            }
+            
+            .type-item {
+                padding: 8px 10px;
+            }
+            
+            .type-name {
+                font-size: 0.8rem;
+            }
+            
+            .category-badge {
+                font-size: 0.7rem;
+                padding: 3px 8px;
+            }
+            
+            .btn {
+                padding: 12px;
+                font-size: 0.9rem;
+            }
+            
+            .question-card {
+                padding: 18px;
+            }
+            
+            .question-passage {
+                font-size: 0.85rem;
+                padding: 15px;
+                max-height: 150px;
+            }
+            
+            .choice-item {
+                padding: 10px 12px;
+                font-size: 0.85rem;
+            }
+        }
+        
+        /* 스크롤바 */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: #e1e2c3;
+            border-radius: 10px;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: #d4d9b8;
+            border-radius: 10px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: #7a8450;
+        }
+    </style>
+</head>
+<body>
+    <a href="index.html" class="home-btn">
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
+        </svg>
+        홈으로
+    </a>
+    
+    <div class="container">
+        <header>
+            <h1>📖 <span>Reading</span> Quiz Generator</h1>
+            <p class="subtitle">독해 지문 기반 AI 문항 자동 출제 시스템</p>
+            <span class="ai-badge">🤖 GPT-4o-mini 기반</span>
+        </header>
+        
+        <div class="main-content">
+            <aside class="sidebar">
+                <!-- API 키 섹션 -->
+                <div class="card">
+                    <div class="section-title">API 설정</div>
+                    <div class="api-section">
+                        <div class="api-status">
+                            <div class="status-dot disconnected" id="statusDot"></div>
+                            <span id="apiStatusText">API 키를 입력해주세요</span>
+                        </div>
+                        <input type="password" class="api-input" id="apiKeyInput" placeholder="sk-...">
+                        <button class="api-btn" id="saveApiKey">🔑 API 키 저장</button>
+                        <div class="api-hint">💡 API 키는 브라우저에만 저장되며 서버로 전송되지 않습니다.</div>
+                    </div>
+                </div>
+                
+                <!-- 지문 입력 섹션 -->
+                <div class="card">
+                    <div class="section-title">지문 입력</div>
+                    <textarea class="passage-textarea" id="passageInput" placeholder="여기에 영어 독해 지문을 붙여넣기 하세요...
+
+예시:
+The digital revolution has fundamentally transformed the way we communicate, work, and interact with the world around us..."></textarea>
+                    <div class="char-count">
+                        <span id="charCount">0</span> 자
+                    </div>
+                </div>
+                
+                <!-- 문항 유형 선택 -->
+                <div class="card">
+                    <div class="section-title">문항 유형 선택 (최대 3개)</div>
+                    
+                    <!-- 대의 -->
+                    <div class="type-category">
+                        <div class="category-header">
+                            <span class="category-badge badge-meaning">대의</span>
+                            <span class="category-name">글의 주제/제목/요지 파악</span>
+                        </div>
+                        <div class="sub-types">
+                            <div class="type-item" data-type="대의" data-subtype="주제/제목/요지">
+                                <div class="type-checkbox"></div>
+                                <span class="type-name">주제 / 제목 / 요지 파악</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 세부 -->
+                    <div class="type-category">
+                        <div class="category-header">
+                            <span class="category-badge badge-detail">세부</span>
+                            <span class="category-name">세부 정보 파악</span>
+                        </div>
+                        <div class="sub-types">
+                            <div class="type-item" data-type="세부" data-subtype="일치">
+                                <div class="type-checkbox"></div>
+                                <span class="type-name">내용 일치/불일치</span>
+                            </div>
+                            <div class="type-item" data-type="세부" data-subtype="특정 정보">
+                                <div class="type-checkbox"></div>
+                                <span class="type-name">특정 정보 파악</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 추론 -->
+                    <div class="type-category">
+                        <div class="category-header">
+                            <span class="category-badge badge-inference">추론</span>
+                            <span class="category-name">추론적 이해</span>
+                        </div>
+                        <div class="sub-types">
+                            <div class="type-item" data-type="추론" data-subtype="지칭 추론">
+                                <div class="type-checkbox"></div>
+                                <span class="type-name">지칭 추론</span>
+                            </div>
+                            <div class="type-item" data-type="추론" data-subtype="요약문 빈칸">
+                                <div class="type-checkbox"></div>
+                                <span class="type-name">요약문 빈칸 추론</span>
+                            </div>
+                            <div class="type-item" data-type="추론" data-subtype="본문 빈칸">
+                                <div class="type-checkbox"></div>
+                                <span class="type-name">본문 빈칸 추론</span>
+                            </div>
+                            <div class="type-item" data-type="추론" data-subtype="의미 추론">
+                                <div class="type-checkbox"></div>
+                                <span class="type-name">함축 의미 추론</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 어법 -->
+                    <div class="type-category">
+                        <div class="category-header">
+                            <span class="category-badge badge-grammar">어법</span>
+                            <span class="category-name">어법 문제</span>
+                        </div>
+                        <div class="sub-types">
+                            <div class="type-item" data-type="어법" data-subtype="동일 용법">
+                                <div class="type-checkbox"></div>
+                                <span class="type-name">동일하게 쓰인 문장 고르기</span>
+                            </div>
+                            <div class="type-item" data-type="어법" data-subtype="어법 오류">
+                                <div class="type-checkbox"></div>
+                                <span class="type-name">어법상 틀린 것 고르기</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 어휘 -->
+                    <div class="type-category">
+                        <div class="category-header">
+                            <span class="category-badge badge-vocab">어휘</span>
+                            <span class="category-name">어휘 문제</span>
+                        </div>
+                        <div class="sub-types">
+                            <div class="type-item" data-type="어휘" data-subtype="유의어">
+                                <div class="type-checkbox"></div>
+                                <span class="type-name">유의어</span>
+                            </div>
+                            <div class="type-item" data-type="어휘" data-subtype="반의어">
+                                <div class="type-checkbox"></div>
+                                <span class="type-name">반의어</span>
+                            </div>
+                            <div class="type-item" data-type="어휘" data-subtype="영영뜻풀이">
+                                <div class="type-checkbox"></div>
+                                <span class="type-name">영영 뜻풀이</span>
+                            </div>
+                            <div class="type-item" data-type="어휘" data-subtype="문맥상 어휘">
+                                <div class="type-checkbox"></div>
+                                <span class="type-name">문맥상 틀린 어휘 파악</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 논리 -->
+                    <div class="type-category">
+                        <div class="category-header">
+                            <span class="category-badge badge-logic">논리</span>
+                            <span class="category-name">논리적 구조 파악</span>
+                        </div>
+                        <div class="sub-types">
+                            <div class="type-item" data-type="논리" data-subtype="무관한 문장">
+                                <div class="type-checkbox"></div>
+                                <span class="type-name">흐름과 무관한 문장</span>
+                            </div>
+                            <div class="type-item" data-type="논리" data-subtype="문장 순서">
+                                <div class="type-checkbox"></div>
+                                <span class="type-name">문장 순서 배열</span>
+                            </div>
+                            <div class="type-item" data-type="논리" data-subtype="문단 순서">
+                                <div class="type-checkbox"></div>
+                                <span class="type-name">문단 순서 배열</span>
+                            </div>
+                            <div class="type-item" data-type="논리" data-subtype="문장 위치">
+                                <div class="type-checkbox"></div>
+                                <span class="type-name">주어진 문장의 위치</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 선택 현황 -->
+                    <div class="selection-info">
+                        <div class="selection-count">
+                            <span class="count-text">선택된 유형</span>
+                            <span><span class="count-number" id="selectionCount">0</span> / 3</span>
+                        </div>
+                        <div class="selected-types" id="selectedTypes"></div>
+                    </div>
+                    
+                    <button class="btn btn-primary" id="generateBtn" disabled>
+                        ✨ AI 문항 생성
+                    </button>
+                    
+                    <button class="btn btn-download" id="downloadBtn" style="display: none;">
+                        📥 엑셀 다운로드
+                    </button>
+                </div>
+            </aside>
+            
+            <main class="result-area">
+                <div class="result-header">
+                    <div class="section-title">생성된 문항</div>
+                    <div class="result-stats" id="resultStats" style="display: none;">
+                        <div class="stat-item">총 <span id="totalCount">0</span>문항</div>
+                    </div>
+                </div>
+                
+                <div class="loading" id="loading">
+                    <div class="spinner"></div>
+                    <p class="loading-text">AI가 문항을 생성하고 있습니다...</p>
+                    <div class="loading-progress" id="loadingProgress">준비 중...</div>
+                </div>
+                
+                <div class="empty-state" id="emptyState">
+                    <div class="empty-icon">📚</div>
+                    <div class="empty-text">아직 생성된 문항이 없습니다</div>
+                    <div class="empty-subtext">지문을 입력하고 문항 유형을 선택한 후 생성 버튼을 클릭하세요</div>
+                </div>
+                
+                <div class="question-list" id="questionList" style="display: none;"></div>
+            </main>
+        </div>
+    </div>
+    
+    <div class="toast" id="toast"></div>
+
+    <script>
+        // API 키 관리
+        let OPENAI_API_KEY = localStorage.getItem('openai_api_key') || '';
+        
+        // 선택된 문항 유형
+        let selectedTypes = [];
+        const MAX_SELECTIONS = 3;
+        
+        // 생성된 문항 데이터
+        let generatedQuestions = [];
+        
+        // DOM 요소
+        const passageInput = document.getElementById('passageInput');
+        const charCount = document.getElementById('charCount');
+        const generateBtn = document.getElementById('generateBtn');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const loading = document.getElementById('loading');
+        const loadingProgress = document.getElementById('loadingProgress');
+        const emptyState = document.getElementById('emptyState');
+        const questionList = document.getElementById('questionList');
+        const resultStats = document.getElementById('resultStats');
+        
+        // 토스트 메시지
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.className = `toast ${type} show`;
+            setTimeout(() => toast.classList.remove('show'), 3000);
+        }
+        
+        // API 키 상태 업데이트
+        function updateApiStatus() {
+            const statusDot = document.getElementById('statusDot');
+            const statusText = document.getElementById('apiStatusText');
+            const apiInput = document.getElementById('apiKeyInput');
+            const saveBtn = document.getElementById('saveApiKey');
+            
+            if (OPENAI_API_KEY && OPENAI_API_KEY.startsWith('sk-')) {
+                statusDot.classList.remove('disconnected');
+                statusText.textContent = 'API 연결됨 ✓';
+                apiInput.value = OPENAI_API_KEY.slice(0, 10) + '...' + OPENAI_API_KEY.slice(-4);
+                apiInput.disabled = true;
+                saveBtn.textContent = '🗑️ API 키 삭제';
+            } else {
+                statusDot.classList.add('disconnected');
+                statusText.textContent = 'API 키를 입력해주세요';
+                apiInput.value = '';
+                apiInput.disabled = false;
+                saveBtn.textContent = '🔑 API 키 저장';
+            }
+            updateGenerateButton();
+        }
+        
+        // API 키 저장/삭제
+        document.getElementById('saveApiKey').addEventListener('click', () => {
+            const apiInput = document.getElementById('apiKeyInput');
+            
+            if (OPENAI_API_KEY && OPENAI_API_KEY.startsWith('sk-')) {
+                localStorage.removeItem('openai_api_key');
+                OPENAI_API_KEY = '';
+                showToast('API 키가 삭제되었습니다.', 'success');
+            } else {
+                const key = apiInput.value.trim();
+                if (!key.startsWith('sk-')) {
+                    showToast('올바른 API 키 형식이 아닙니다. (sk-...)', 'error');
+                    return;
+                }
+                localStorage.setItem('openai_api_key', key);
+                OPENAI_API_KEY = key;
+                showToast('API 키가 저장되었습니다!', 'success');
+            }
+            updateApiStatus();
+        });
+        
+        // 지문 글자 수 카운트
+        passageInput.addEventListener('input', () => {
+            charCount.textContent = passageInput.value.length;
+            updateGenerateButton();
+        });
+        
+        // 문항 유형 선택 이벤트
+        document.querySelectorAll('.type-item').forEach(item => {
+            item.addEventListener('click', () => {
+                if (item.classList.contains('disabled')) return;
+                
+                const type = item.dataset.type;
+                const subtype = item.dataset.subtype;
+                const fullType = `${type} - ${subtype}`;
+                
+                if (item.classList.contains('selected')) {
+                    // 선택 해제
+                    item.classList.remove('selected');
+                    selectedTypes = selectedTypes.filter(t => t.fullType !== fullType);
+                } else {
+                    // 선택
+                    if (selectedTypes.length >= MAX_SELECTIONS) {
+                        showToast(`최대 ${MAX_SELECTIONS}개까지만 선택할 수 있습니다.`, 'error');
+                        return;
+                    }
+                    item.classList.add('selected');
+                    selectedTypes.push({ type, subtype, fullType });
+                }
+                
+                updateSelectionUI();
+                updateGenerateButton();
+            });
+        });
+        
+        // 선택 UI 업데이트
+        function updateSelectionUI() {
+            const countEl = document.getElementById('selectionCount');
+            const typesEl = document.getElementById('selectedTypes');
+            
+            countEl.textContent = selectedTypes.length;
+            countEl.classList.toggle('max', selectedTypes.length >= MAX_SELECTIONS);
+            
+            typesEl.innerHTML = selectedTypes.map(t => 
+                `<span class="selected-tag">${t.fullType}</span>`
+            ).join('');
+            
+            // 최대 선택 시 나머지 비활성화
+            document.querySelectorAll('.type-item').forEach(item => {
+                if (!item.classList.contains('selected')) {
+                    item.classList.toggle('disabled', selectedTypes.length >= MAX_SELECTIONS);
+                }
+            });
+        }
+        
+        // 생성 버튼 상태 업데이트
+        function updateGenerateButton() {
+            const hasApiKey = OPENAI_API_KEY && OPENAI_API_KEY.startsWith('sk-');
+            const hasPassage = passageInput.value.trim().length > 50;
+            const hasTypes = selectedTypes.length > 0;
+            
+            generateBtn.disabled = !(hasApiKey && hasPassage && hasTypes);
+        }
+        
+        // OpenAI API 호출
+        async function callOpenAI(prompt, systemPrompt = '', retryCount = 0) {
+            try {
+                const response = await fetch('https://api.openai.com/v1/chat/completions', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${OPENAI_API_KEY}`
+                    },
+                    body: JSON.stringify({
+                        model: 'gpt-4o-mini',
+                        messages: [
+                            { role: 'system', content: systemPrompt || 'You are an expert English reading comprehension test question creator for Korean students. Always respond with valid JSON only, no additional text.' },
+                            { role: 'user', content: prompt }
+                        ],
+                        temperature: 0.7,
+                        max_tokens: 4000
+                    })
+                });
+                
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({}));
+                    const errorMsg = errorData.error?.message || `API 오류: ${response.status}`;
+                    console.error('API 응답 오류:', errorMsg);
+                    throw new Error(errorMsg);
+                }
+                
+                const data = await response.json();
+                const content = data.choices[0].message.content;
+                console.log('API 응답:', content.substring(0, 200) + '...');
+                return content;
+            } catch (error) {
+                console.error('API 호출 실패:', error);
+                // 재시도 로직 (최대 2회)
+                if (retryCount < 2) {
+                    console.log(`재시도 중... (${retryCount + 1}/2)`);
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                    return callOpenAI(prompt, systemPrompt, retryCount + 1);
+                }
+                throw error;
+            }
+        }
+        
+        // 문항 유형별 프롬프트 생성
+        function getPromptForType(passage, type, subtype) {
+            const baseInstruction = `다음 영어 지문을 바탕으로 문항을 출제해주세요.
+
+[지문]:
+${passage}
+
+`;
+            
+            const typePrompts = {
+                '대의': {
+                    '주제/제목/요지': `${baseInstruction}
+[출제 유형]: 글의 주제/제목/요지 파악
+
+다음 형식의 5지선다 문항을 출제해주세요:
+- 지시문: "다음 글의 주제/제목/요지로 가장 적절한 것은?" 중 하나를 선택
+- 선지는 5개 (한글로 작성, 비슷한 길이)
+- 매력적인 오답 포함
+
+JSON 형식으로 응답:
+{
+    "instruction": "지시문",
+    "question": "",
+    "choices": ["선지1", "선지2", "선지3", "선지4", "선지5"],
+    "answer": 정답번호(1-5)
+}`
+                },
+                '세부': {
+                    '일치': `${baseInstruction}
+[출제 유형]: 내용 일치/불일치
+
+다음 형식의 5지선다 문항을 출제해주세요:
+- 지시문: "다음 글의 내용과 일치하지 않는 것은?" 또는 "다음 글의 내용과 일치하는 것은?"
+- 선지는 5개 (한글로 작성)
+- 지문의 세부 정보를 정확히 반영
+
+JSON 형식으로 응답:
+{
+    "instruction": "지시문",
+    "question": "",
+    "choices": ["선지1", "선지2", "선지3", "선지4", "선지5"],
+    "answer": 정답번호(1-5)
+}`,
+                    '특정 정보': `${baseInstruction}
+[출제 유형]: 특정 정보 파악
+
+다음 형식의 5지선다 문항을 출제해주세요:
+- 지시문: 지문의 특정 정보를 묻는 질문
+- 선지는 5개
+- 지문에서 직접 확인 가능한 정보 출제
+
+JSON 형식으로 응답:
+{
+    "instruction": "지시문",
+    "question": "구체적인 질문",
+    "choices": ["선지1", "선지2", "선지3", "선지4", "선지5"],
+    "answer": 정답번호(1-5)
+}`
+                },
+                '추론': {
+                    '지칭 추론': `${baseInstruction}
+[출제 유형]: 지칭 추론
+
+다음 형식의 5지선다 문항을 출제해주세요:
+- 지문에서 대명사나 지시어가 무엇을 가리키는지 묻는 문항
+- 밑줄 친 부분을 명시
+- 선지는 5개
+
+JSON 형식으로 응답:
+{
+    "instruction": "밑줄 친 [단어]가 가리키는 것으로 가장 적절한 것은?",
+    "question": "",
+    "choices": ["선지1", "선지2", "선지3", "선지4", "선지5"],
+    "answer": 정답번호(1-5)
+}`,
+                    '요약문 빈칸': `${baseInstruction}
+[출제 유형]: 요약문 빈칸 추론
+
+다음 형식의 문항을 출제해주세요:
+- 지문 요약문에 빈칸 (A), (B) 포함
+- 각 빈칸에 들어갈 단어 조합을 선지로 제시
+
+JSON 형식으로 응답:
+{
+    "instruction": "다음 글의 내용을 한 문장으로 요약하고자 한다. 빈칸 (A), (B)에 들어갈 말로 가장 적절한 것은?",
+    "question": "요약문: [빈칸 (A), (B)가 포함된 요약문]",
+    "choices": ["(A) 단어1 - (B) 단어1", "(A) 단어2 - (B) 단어2", "(A) 단어3 - (B) 단어3", "(A) 단어4 - (B) 단어4", "(A) 단어5 - (B) 단어5"],
+    "answer": 정답번호(1-5)
+}`,
+                    '본문 빈칸': `${baseInstruction}
+[출제 유형]: 본문 빈칸 추론
+
+다음 형식의 문항을 출제해주세요:
+- 지문의 핵심 문장에 빈칸 설정
+- 문맥상 적절한 표현을 추론하는 문항
+- 선지는 5개 (영어 표현)
+
+JSON 형식으로 응답:
+{
+    "instruction": "다음 글의 빈칸에 들어갈 말로 가장 적절한 것은?",
+    "question": "[빈칸이 포함된 문장]",
+    "choices": ["선지1", "선지2", "선지3", "선지4", "선지5"],
+    "answer": 정답번호(1-5)
+}`,
+                    '의미 추론': `${baseInstruction}
+[출제 유형]: 함축 의미 추론
+
+다음 형식의 문항을 출제해주세요:
+- 밑줄 친 표현의 함축적 의미를 묻는 문항
+- 선지는 5개 (한글로 작성)
+
+JSON 형식으로 응답:
+{
+    "instruction": "밑줄 친 부분이 의미하는 바로 가장 적절한 것은?",
+    "question": "[밑줄 친 표현]",
+    "choices": ["선지1", "선지2", "선지3", "선지4", "선지5"],
+    "answer": 정답번호(1-5)
+}`
+                },
+                '어법': {
+                    '동일 용법': `${baseInstruction}
+[출제 유형]: 동일하게 쓰인 문장 고르기
+
+규칙:
+- 원본 지문은 절대 수정/삭제하지 않음
+- 지문에서 특정 문법 요소(관계사, to부정사, 분사 등)에 밑줄만 표시
+- 같은 용법으로 쓰인 문장을 선지로 제시 (선지는 지문 외부에서 새로 작성)
+
+JSON 형식으로 응답. answer는 1-5 숫자.
+{"instruction": "밑줄 친 [문법요소]와 쓰임이 같은 것은?", "question": "원본지문에서 밑줄친 부분 표시", "choices": ["예문1", "예문2", "예문3", "예문4", "예문5"], "answer": 정답숫자}`,
+                    '어법 오류': `${baseInstruction}
+[출제 유형]: 어법상 틀린 것 고르기
+
+중요 규칙:
+- 원본 지문의 문장 구조는 절대 변경하지 않음
+- 문장을 삭제하거나 축소하지 않음
+- 오직 "단어 1개"만 어법상 틀린 형태로 수정 (예: is→are, go→going)
+- 5개 단어/표현에 ①②③④⑤ 밑줄 표시, 그 중 1개만 틀리게
+
+JSON 형식으로 응답. answer는 1-5 숫자.
+{"instruction": "다음 글의 밑줄 친 부분 중, 어법상 틀린 것은?", "question": "원본 지문 전체 (5개 밑줄 표시, 1개만 틀린 단어)", "choices": ["① 단어1", "② 단어2", "③ 단어3", "④ 단어4", "⑤ 단어5"], "answer": 정답숫자}`
+                },
+                '어휘': {
+                    '유의어': `${baseInstruction}
+[출제 유형]: 유의어
+
+다음 형식의 문항을 출제해주세요:
+- 지문에서 핵심 어휘를 선택하여 밑줄
+- 해당 어휘와 의미가 가장 가까운 단어를 고르는 문항
+- 선지는 5개 (영어 단어)
+
+JSON 형식으로 응답:
+{
+    "instruction": "밑줄 친 [단어]와 의미가 가장 가까운 것은?",
+    "question": "",
+    "choices": ["단어1", "단어2", "단어3", "단어4", "단어5"],
+    "answer": 정답번호(1-5)
+}`,
+                    '반의어': `${baseInstruction}
+[출제 유형]: 반의어
+
+다음 형식의 문항을 출제해주세요:
+- 지문에서 핵심 어휘를 선택하여 밑줄
+- 해당 어휘와 반대 의미의 단어를 고르는 문항
+- 선지는 5개 (영어 단어)
+
+JSON 형식으로 응답:
+{
+    "instruction": "밑줄 친 [단어]와 의미가 반대인 것은?",
+    "question": "",
+    "choices": ["단어1", "단어2", "단어3", "단어4", "단어5"],
+    "answer": 정답번호(1-5)
+}`,
+                    '영영뜻풀이': `${baseInstruction}
+[출제 유형]: 영영 뜻풀이
+
+다음 형식의 문항을 출제해주세요:
+- 지문에서 핵심 어휘를 선택
+- 영영 뜻풀이를 제시하고 해당하는 단어를 고르는 문항
+- 선지는 5개 (지문에 나온 영어 단어들)
+
+JSON 형식으로 응답:
+{
+    "instruction": "다음 영영 뜻풀이에 해당하는 단어를 본문에서 찾으시오.",
+    "question": "[영영 뜻풀이]",
+    "choices": ["단어1", "단어2", "단어3", "단어4", "단어5"],
+    "answer": 정답번호(1-5)
+}`,
+                    '문맥상 어휘': `${baseInstruction}
+[출제 유형]: 문맥상 틀린 어휘 파악
+
+중요 규칙:
+- 원본 지문의 문장 구조는 절대 변경하지 않음
+- 문장을 삭제하거나 축소하지 않음
+- 오직 "단어 1개"만 문맥상 반대/부적절한 단어로 교체
+- 5개 단어에 ①②③④⑤ 밑줄 표시, 그 중 1개만 문맥상 틀리게
+
+JSON 형식으로 응답. answer는 1-5 숫자.
+{"instruction": "다음 글의 밑줄 친 부분 중, 문맥상 낱말의 쓰임이 적절하지 않은 것은?", "question": "원본 지문 전체 (5개 밑줄 표시, 1개만 틀린 단어)", "choices": ["① 어휘1", "② 어휘2", "③ 어휘3", "④ 어휘4", "⑤ 어휘5"], "answer": 정답숫자}`
+                },
+                '논리': {
+                    '무관한 문장': `${baseInstruction}
+[출제 유형]: 흐름과 무관한 문장
+
+중요 규칙:
+- 원본 지문의 모든 문장을 그대로 유지 (삭제/수정 절대 금지!)
+- 원본 지문 중간에 "흐름과 무관한 새 문장 1개"를 추가 삽입
+- 원본 문장들 + 추가된 1문장 = 총 문장들에 ①②③④⑤ 번호 부여
+- 추가된 무관한 문장이 정답
+
+JSON 형식으로 응답. answer는 1-5 숫자.
+{"instruction": "다음 글에서 전체 흐름과 관계 없는 문장은?", "question": "① 원본문장1 ② 원본문장2 ③ 추가된무관문장 ④ 원본문장3 ⑤ 원본문장4", "choices": ["①", "②", "③", "④", "⑤"], "answer": 정답숫자}`,
+                    '문장 순서': `${baseInstruction}
+[출제 유형]: 문장 순서 배열
+
+지문을 주어진 문장 + (A), (B), (C) 세 부분으로 나눠주세요.
+
+중요: 반드시 아래 JSON 형식으로만 응답하세요. 다른 텍스트 없이 JSON만 출력하세요.
+{"instruction": "주어진 글 다음에 이어질 글의 순서로 가장 적절한 것은?", "question": "주어진 문장과 (A)(B)(C) 내용", "choices": ["(A)-(C)-(B)", "(B)-(A)-(C)", "(B)-(C)-(A)", "(C)-(A)-(B)", "(C)-(B)-(A)"], "answer": 정답번호}`,
+                    '문단 순서': `${baseInstruction}
+[출제 유형]: 문단 순서 배열
+
+지문을 주어진 문단 + (A), (B), (C) 세 부분으로 나눠주세요.
+
+중요: 반드시 아래 JSON 형식으로만 응답하세요. 다른 텍스트 없이 JSON만 출력하세요.
+{"instruction": "주어진 글 다음에 이어질 글의 순서로 가장 적절한 것은?", "question": "주어진 문단과 (A)(B)(C) 내용", "choices": ["(A)-(C)-(B)", "(B)-(A)-(C)", "(B)-(C)-(A)", "(C)-(A)-(B)", "(C)-(B)-(A)"], "answer": 정답번호}`,
+                    '문장 위치': `${baseInstruction}
+[출제 유형]: 주어진 문장의 위치
+
+절대 규칙 (반드시 준수):
+1. 원본 지문의 모든 문장을 그대로 유지 (단 1개도 삭제/수정 금지!)
+2. 원본 지문에서 문장 1개만 "분리"하여 [주어진 문장]으로 제시
+3. 주어진 문장은 반드시 1개 문장만 (마침표 1개로 끝나는 문장)
+4. 나머지 모든 문장은 그대로 두고, 문장과 문장 사이에 ①②③④⑤ 위치 번호 삽입
+5. 정답은 주어진 문장이 원래 있던 위치 번호
+
+출제 방법:
+- 원본이 "A. B. C. D. E." 5문장이고, C를 주어진 문장으로 분리한다면:
+- [주어진 문장] C.
+- ① A. ② B. ③ D. ④ E.
+- 정답: 2 (B와 D 사이 = ② 다음 위치 = C가 원래 있던 곳)
+
+주의: ①②③④⑤는 "문장 앞"이 아니라 "문장 사이 삽입 가능 위치"를 의미함
+
+JSON 형식으로 응답. answer는 1-5 숫자.
+{"instruction": "글의 흐름으로 보아, 주어진 문장이 들어가기에 가장 적절한 곳은?", "question": "[주어진 문장] 분리된문장\\n\\n① 첫문장. ② 둘째문장. ③ 셋째문장. ④ 넷째문장.", "choices": ["①", "②", "③", "④", "⑤"], "answer": 정답숫자}`
+                }
+            };
+            
+            return typePrompts[type]?.[subtype] || '';
+        }
+        
+        // 문항 생성
+        generateBtn.addEventListener('click', generateQuestions);
+        
+        async function generateQuestions() {
+            const passage = passageInput.value.trim();
+            
+            if (!passage || selectedTypes.length === 0) {
+                showToast('지문과 문항 유형을 확인해주세요.', 'error');
+                return;
+            }
+            
+            // UI 상태 변경
+            loading.classList.add('show');
+            emptyState.style.display = 'none';
+            questionList.style.display = 'none';
+            generateBtn.disabled = true;
+            
+            generatedQuestions = [];
+            
+            try {
+                for (let i = 0; i < selectedTypes.length; i++) {
+                    const typeInfo = selectedTypes[i];
+                    loadingProgress.textContent = `${typeInfo.fullType} 문항 생성 중... (${i + 1}/${selectedTypes.length})`;
+                    
+                    const prompt = getPromptForType(passage, typeInfo.type, typeInfo.subtype);
+                    const response = await callOpenAI(prompt);
+                    
+                    try {
+                        // JSON 추출 시도
+                        let jsonMatch = response.match(/\{[\s\S]*\}/);
+                        if (!jsonMatch) {
+                            throw new Error('JSON 형식을 찾을 수 없습니다.');
+                        }
+                        
+                        let jsonStr = jsonMatch[0];
+                        
+                        // 흔한 JSON 오류 수정
+                        jsonStr = jsonStr.replace(/,\s*}/g, '}').replace(/,\s*]/g, ']');
+                        
+                        // answer 필드의 특수문자를 숫자로 변환
+                        // ⓐ→1, ⓑ→2, ⓒ→3, ⓓ→4, ⓔ→5, ①→1, ②→2, ③→3, ④→4, ⑤→5
+                        jsonStr = jsonStr.replace(/"answer"\s*:\s*[ⓐ①]/g, '"answer": 1');
+                        jsonStr = jsonStr.replace(/"answer"\s*:\s*[ⓑ②]/g, '"answer": 2');
+                        jsonStr = jsonStr.replace(/"answer"\s*:\s*[ⓒ③]/g, '"answer": 3');
+                        jsonStr = jsonStr.replace(/"answer"\s*:\s*[ⓓ④]/g, '"answer": 4');
+                        jsonStr = jsonStr.replace(/"answer"\s*:\s*[ⓔ⑤]/g, '"answer": 5');
+                        
+                        // "answer": "1" 같은 문자열도 숫자로 처리
+                        jsonStr = jsonStr.replace(/"answer"\s*:\s*"(\d)"/g, '"answer": $1');
+                        
+                        console.log('정제된 JSON:', jsonStr.substring(0, 300) + '...');
+                        
+                        const questionData = JSON.parse(jsonStr);
+                        
+                        // answer를 숫자로 변환
+                        let answer = questionData.answer;
+                        if (typeof answer === 'string') {
+                            // 문자열에서 숫자 추출
+                            const numMatch = answer.match(/[1-5]/);
+                            answer = numMatch ? numMatch[0] : '1';
+                        }
+                        
+                        // 필수 필드 검증
+                        if (!questionData.instruction || !questionData.choices) {
+                            throw new Error('필수 필드가 누락되었습니다.');
+                        }
+                        
+                        generatedQuestions.push({
+                            num: i + 1,
+                            type: typeInfo.type,
+                            subtype: typeInfo.subtype,
+                            fullType: typeInfo.fullType,
+                            passage: passage,
+                            instruction: questionData.instruction || '',
+                            question: questionData.question || '',
+                            choices: questionData.choices || [],
+                            answer: String(answer) || '1'
+                        });
+                        
+                        console.log(`✅ ${typeInfo.fullType} 문항 생성 성공`);
+                    } catch (parseError) {
+                        console.error(`❌ ${typeInfo.fullType} JSON 파싱 오류:`, parseError);
+                        console.error('원본 응답:', response);
+                        showToast(`${typeInfo.fullType} 문항 생성 중 오류가 발생했습니다. 다시 시도해주세요.`, 'error');
+                    }
+                }
+                
+                // 결과 표시
+                loading.classList.remove('show');
+                if (generatedQuestions.length > 0) {
+                    displayResults();
+                    showToast(`${generatedQuestions.length}개의 문항이 생성되었습니다!`, 'success');
+                } else {
+                    emptyState.style.display = 'flex';
+                    showToast('문항 생성에 실패했습니다.', 'error');
+                }
+                
+            } catch (error) {
+                loading.classList.remove('show');
+                emptyState.style.display = 'flex';
+                showToast(`오류 발생: ${error.message}`, 'error');
+                console.error(error);
+            } finally {
+                generateBtn.disabled = false;
+                updateGenerateButton();
+            }
+        }
+        
+        // 결과 표시
+        function displayResults() {
+            questionList.innerHTML = '';
+            
+            const badgeClasses = {
+                '대의': 'badge-meaning',
+                '세부': 'badge-detail',
+                '추론': 'badge-inference',
+                '어법': 'badge-grammar',
+                '어휘': 'badge-vocab',
+                '논리': 'badge-logic'
+            };
+            
+            generatedQuestions.forEach(q => {
+                const card = document.createElement('div');
+                card.className = 'question-card';
+                
+                const badgeClass = badgeClasses[q.type] || 'badge-meaning';
+                
+                // 논리 유형(문장 위치, 문장 순서 등)일 때 주어진 문장 분리 표시
+                let questionContent = '';
+                if (q.type === '논리' && q.question) {
+                    let givenSentence = '';
+                    let modifiedPassage = q.question;
+                    
+                    // [주어진 문장] 태그로 분리 시도
+                    if (q.question.includes('[주어진 문장]')) {
+                        const parts = q.question.split(/\[주어진 문장\]\s*/);
+                        if (parts.length > 1) {
+                            // 주어진 문장 뒤의 첫 문장 추출 (① 전까지)
+                            const afterTag = parts[1];
+                            const firstMarker = afterTag.search(/[①\(A\)]/);
+                            if (firstMarker > 0) {
+                                givenSentence = afterTag.substring(0, firstMarker).trim();
+                                modifiedPassage = afterTag.substring(firstMarker).trim();
+                            } else {
+                                givenSentence = afterTag.split('\n')[0].trim();
+                                modifiedPassage = afterTag.substring(givenSentence.length).trim();
+                            }
+                        }
+                    } else {
+                        // ① 기준으로 분리 시도
+                        const firstMarkerIndex = q.question.search(/[①\(A\)]/);
+                        if (firstMarkerIndex > 0) {
+                            givenSentence = q.question.substring(0, firstMarkerIndex).trim();
+                            modifiedPassage = q.question.substring(firstMarkerIndex).trim();
+                        }
+                    }
+                    
+                    if (givenSentence) {
+                        questionContent = `
+                            <div style="margin-bottom: 15px; padding: 15px; background: rgba(241, 196, 15, 0.15); border-radius: 10px; border: 2px solid rgba(241, 196, 15, 0.4);">
+                                <div style="font-size: 0.8rem; color: #f1c40f; font-weight: 600; margin-bottom: 8px;">📝 주어진 문장</div>
+                                <div style="font-size: 0.95rem; line-height: 1.7;">${givenSentence}</div>
+                            </div>
+                            <div style="padding: 15px; background: rgba(0,0,0,0.2); border-radius: 10px; line-height: 2.2; font-size: 0.95rem;">
+                                <div style="font-size: 0.8rem; color: #2ecc71; font-weight: 600; margin-bottom: 10px;">📄 위치 표시된 지문</div>
+                                ${modifiedPassage}
+                            </div>
+                        `;
+                    } else {
+                        questionContent = `<div class="question-text" style="white-space: pre-wrap; line-height: 2;">${q.question}</div>`;
+                    }
+                } else if (q.question) {
+                    questionContent = `<div class="question-text">${q.question}</div>`;
+                }
+                
+                card.innerHTML = `
+                    <div class="question-header">
+                        <span class="question-number">Q${q.num}</span>
+                        <span class="question-type-badge ${badgeClass}">${q.fullType}</span>
+                    </div>
+                    <div class="question-instruction">${q.instruction}</div>
+                    <div class="question-passage">${q.passage.substring(0, 300)}${q.passage.length > 300 ? '...' : ''}</div>
+                    ${questionContent}
+                    <div class="question-choices">
+                        ${q.choices.map((c, i) => {
+                            const isCorrect = (i + 1) === parseInt(q.answer);
+                            return `
+                                <div class="choice-item ${isCorrect ? 'correct' : ''}">
+                                    <span class="choice-number">${['①','②','③','④','⑤'][i]}</span>
+                                    ${c}
+                                    ${isCorrect ? '<span style="float: right; color: #7a8450; font-weight: 600;">✓ 정답</span>' : ''}
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+                    <div class="answer-section">
+                        <span class="answer-label">📌 정답: ${q.answer}번</span>
+                    </div>
+                `;
+                
+                questionList.appendChild(card);
+            });
+            
+            // 통계 업데이트
+            document.getElementById('totalCount').textContent = generatedQuestions.length;
+            resultStats.style.display = 'flex';
+            questionList.style.display = 'flex';
+            downloadBtn.style.display = 'block';
+        }
+        
+        // 엑셀 다운로드
+        downloadBtn.addEventListener('click', downloadExcel);
+        
+        function downloadExcel() {
+            // 헤더 행
+            const wsData = [
+                ['지시문', '지문', '문제', '선지1', '선지2', '선지3', '선지4', '선지5', '정답']
+            ];
+            
+            // 데이터 행
+            generatedQuestions.forEach(q => {
+                wsData.push([
+                    q.instruction || '',
+                    q.passage || '',
+                    q.question || '',
+                    q.choices[0] || '',
+                    q.choices[1] || '',
+                    q.choices[2] || '',
+                    q.choices[3] || '',
+                    q.choices[4] || '',
+                    q.answer || ''
+                ]);
+            });
+            
+            // 워크시트 생성
+            const ws = XLSX.utils.aoa_to_sheet(wsData);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, '문항');
+            
+            // 열 너비 설정
+            ws['!cols'] = [
+                { wch: 40 },  // 지시문
+                { wch: 80 },  // 지문
+                { wch: 50 },  // 문제
+                { wch: 30 },  // 선지1
+                { wch: 30 },  // 선지2
+                { wch: 30 },  // 선지3
+                { wch: 30 },  // 선지4
+                { wch: 30 },  // 선지5
+                { wch: 8 }    // 정답
+            ];
+            
+            // 파일명 생성
+            const now = new Date();
+            const dateStr = `${now.getFullYear()}${(now.getMonth()+1).toString().padStart(2,'0')}${now.getDate().toString().padStart(2,'0')}_${now.getHours().toString().padStart(2,'0')}${now.getMinutes().toString().padStart(2,'0')}`;
+            
+            XLSX.writeFile(wb, `독해문항_${dateStr}.xlsx`);
+            showToast('엑셀 파일이 다운로드되었습니다!', 'success');
+        }
+        
+        // 초기화
+        updateApiStatus();
+    </script>
+</body>
+</html>
