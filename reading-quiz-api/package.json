@@ -1,0 +1,28 @@
+{
+  "name": "reading-quiz-api",
+  "version": "1.0.0",
+  "description": "영어 독해 문항 자동 생성 API 서버 - 엑셀 기반 정책 엔진",
+  "main": "src/server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js"
+  },
+  "keywords": [
+    "education",
+    "quiz",
+    "english",
+    "reading",
+    "openai",
+    "excel"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "openai": "^4.20.1",
+    "xlsx": "^0.18.5"
+  }
+}

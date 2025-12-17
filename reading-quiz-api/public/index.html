@@ -1,0 +1,904 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>⚙️ Pre-setting Reading Quiz Generator</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        /* Matcha Strawberry Palette */
+        :root {
+            --matcha-dark: #7a8450;
+            --matcha-light: #b7c687;
+            --cream: #e1e2c3;
+            --strawberry-light: #f9cdd5;
+            --peach: #f8dcd9;
+            --strawberry: #f3bcc3;
+            
+            --bg-primary: #fdfcf9;
+            --bg-secondary: #f8f7f2;
+            --bg-card: #ffffff;
+            --text-primary: #4a4a3a;
+            --text-secondary: #7a7a6a;
+            --text-muted: #a0a090;
+            --border-color: #e8e7e0;
+        }
+        
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            background: linear-gradient(180deg, var(--bg-primary) 0%, var(--cream) 100%);
+            min-height: 100vh;
+            color: var(--text-primary);
+        }
+        
+        .container { max-width: 1400px; margin: 0 auto; padding: 30px; }
+        
+        header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding: 40px;
+            background: var(--bg-card);
+            border-radius: 24px;
+            border: 2px solid var(--border-color);
+            box-shadow: 0 4px 20px rgba(122, 132, 80, 0.08);
+        }
+        
+        h1 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 2.8rem;
+            font-weight: 700;
+            margin-bottom: 12px;
+            color: var(--text-primary);
+        }
+        
+        h1 .highlight {
+            background: linear-gradient(135deg, var(--matcha-dark), var(--strawberry));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .subtitle { color: var(--text-secondary); font-size: 1.1rem; }
+        
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 20px;
+            background: linear-gradient(135deg, var(--matcha-dark), var(--matcha-light));
+            border-radius: 30px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            margin-top: 16px;
+            color: #fff;
+            box-shadow: 0 4px 15px rgba(122, 132, 80, 0.3);
+        }
+        
+        .main-grid {
+            display: grid;
+            grid-template-columns: 420px 1fr;
+            gap: 30px;
+        }
+        
+        @media (max-width: 1000px) {
+            .main-grid { grid-template-columns: 1fr; }
+        }
+        
+        .card {
+            background: var(--bg-card);
+            border-radius: 20px;
+            padding: 28px;
+            border: 2px solid var(--border-color);
+            margin-bottom: 24px;
+            box-shadow: 0 4px 20px rgba(122, 132, 80, 0.08);
+        }
+        
+        .card-title {
+            font-size: 1.15rem;
+            font-weight: 600;
+            margin-bottom: 20px;
+            padding-bottom: 12px;
+            border-bottom: 2px solid var(--matcha-light);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: var(--text-primary);
+        }
+        
+        .card-title::before {
+            content: '';
+            width: 8px;
+            height: 8px;
+            background: var(--matcha-dark);
+            border-radius: 50%;
+        }
+        
+        /* 지문 선택 드롭다운 */
+        .passage-select {
+            width: 100%;
+            padding: 16px;
+            border: 2px solid var(--border-color);
+            border-radius: 14px;
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .passage-select:focus {
+            outline: none;
+            border-color: var(--matcha-dark);
+            box-shadow: 0 0 0 3px rgba(122, 132, 80, 0.2);
+        }
+        
+        .passage-select option {
+            background: var(--bg-card);
+            color: var(--text-primary);
+            padding: 10px;
+        }
+        
+        .passage-info {
+            margin-top: 16px;
+            padding: 16px;
+            background: rgba(122, 132, 80, 0.1);
+            border-radius: 12px;
+            border: 1px solid var(--matcha-light);
+            display: none;
+        }
+        
+        .passage-info.show { display: block; }
+        
+        .passage-info-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 0.9rem;
+        }
+        
+        .passage-info-row:last-child { margin-bottom: 0; }
+        
+        .passage-info-label { color: var(--text-secondary); }
+        .passage-info-value { color: var(--matcha-dark); font-weight: 600; }
+        
+        .passage-preview {
+            margin-top: 16px;
+            padding: 16px;
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            font-size: 0.9rem;
+            line-height: 1.8;
+            max-height: 150px;
+            overflow-y: auto;
+            display: none;
+            color: var(--text-primary);
+        }
+        
+        .passage-preview.show { display: block; }
+        
+        .folder-hint {
+            margin-top: 12px;
+            padding: 12px;
+            background: var(--peach);
+            border-radius: 10px;
+            border: 1px solid var(--strawberry-light);
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+        
+        /* 문항 유형 */
+        .type-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+        }
+        
+        .type-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 14px;
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            border: 2px solid transparent;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .type-item:hover {
+            background: var(--cream);
+            border-color: var(--matcha-light);
+        }
+        
+        .type-item.selected {
+            background: rgba(122, 132, 80, 0.15);
+            border-color: var(--matcha-dark);
+        }
+        
+        .type-checkbox {
+            width: 22px;
+            height: 22px;
+            border: 2px solid var(--border-color);
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            flex-shrink: 0;
+        }
+        
+        .type-item.selected .type-checkbox {
+            background: var(--matcha-dark);
+            border-color: var(--matcha-dark);
+        }
+        
+        .type-checkbox::after {
+            content: '✓';
+            color: #fff;
+            font-size: 0.8rem;
+            font-weight: bold;
+            opacity: 0;
+            transform: scale(0);
+            transition: all 0.2s ease;
+        }
+        
+        .type-item.selected .type-checkbox::after {
+            opacity: 1;
+            transform: scale(1);
+        }
+        
+        .type-name { font-size: 0.9rem; color: var(--text-secondary); }
+        .type-item.selected .type-name { color: var(--text-primary); font-weight: 500; }
+        
+        .type-item.disabled {
+            opacity: 0.3 !important;
+            cursor: not-allowed !important;
+        }
+        
+        .type-item.disabled:hover {
+            background: var(--bg-secondary);
+            border-color: transparent;
+        }
+        
+        .eligibility-hint {
+            margin-top: 12px;
+            margin-bottom: 12px;
+            padding: 12px;
+            background: var(--peach);
+            border-radius: 10px;
+            border: 1px solid var(--strawberry-light);
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+        
+        .selection-info {
+            margin-top: 16px;
+            padding: 14px;
+            background: rgba(122, 132, 80, 0.1);
+            border-radius: 12px;
+            border: 1px solid var(--matcha-light);
+        }
+        
+        .selection-count {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.95rem;
+            color: var(--text-primary);
+        }
+        
+        .count-number { font-weight: 700; font-size: 1.1rem; color: var(--matcha-dark); }
+        
+        .btn {
+            width: 100%;
+            padding: 18px;
+            border: none;
+            border-radius: 14px;
+            font-size: 1.05rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 16px;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, var(--matcha-dark), var(--matcha-light));
+            color: #fff;
+            box-shadow: 0 8px 30px rgba(122, 132, 80, 0.4);
+        }
+        
+        .btn-primary:hover:not(:disabled) {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 40px rgba(122, 132, 80, 0.5);
+        }
+        
+        .btn-primary:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        /* 결과 영역 */
+        .result-area { min-height: 500px; }
+        
+        .empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 400px;
+            color: var(--text-muted);
+        }
+        
+        .empty-icon { font-size: 5rem; margin-bottom: 24px; opacity: 0.5; }
+        .empty-text { font-size: 1.2rem; margin-bottom: 10px; color: var(--text-secondary); }
+        .empty-subtext { font-size: 0.95rem; color: var(--text-muted); }
+        
+        .loading { display: none; text-align: center; padding: 60px; }
+        .loading.show { display: block; }
+        
+        .spinner {
+            width: 60px;
+            height: 60px;
+            border: 4px solid var(--cream);
+            border-top-color: var(--matcha-dark);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 24px;
+        }
+        
+        @keyframes spin { to { transform: rotate(360deg); } }
+        
+        .loading-text { color: var(--text-secondary); font-size: 1rem; }
+        
+        .loading-progress {
+            margin-top: 16px;
+            padding: 12px 24px;
+            background: var(--cream);
+            border-radius: 10px;
+            font-size: 0.9rem;
+            color: var(--matcha-dark);
+            display: inline-block;
+        }
+        
+        /* 문제 카드 */
+        .question-list { display: flex; flex-direction: column; gap: 28px; }
+        
+        .question-card {
+            background: var(--bg-card);
+            border-radius: 18px;
+            padding: 28px;
+            border: 2px solid var(--border-color);
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 20px rgba(122, 132, 80, 0.08);
+        }
+        
+        .question-card:hover {
+            border-color: var(--matcha-light);
+            box-shadow: 0 8px 30px rgba(122, 132, 80, 0.15);
+        }
+        
+        .question-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 18px;
+        }
+        
+        .question-number {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: var(--matcha-dark);
+        }
+        
+        .question-type-badge {
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            background: linear-gradient(135deg, var(--matcha-dark), var(--matcha-light));
+            color: #fff;
+        }
+        
+        .question-text {
+            font-size: 1.05rem;
+            line-height: 1.8;
+            margin-bottom: 20px;
+            padding: 18px;
+            background: rgba(122, 132, 80, 0.08);
+            border-radius: 12px;
+            border-left: 4px solid var(--matcha-dark);
+            color: var(--text-primary);
+        }
+        
+        .question-choices { display: flex; flex-direction: column; gap: 12px; }
+        
+        .choice-item {
+            padding: 16px 18px;
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            font-size: 0.95rem;
+            border: 2px solid transparent;
+            transition: all 0.3s ease;
+            color: var(--text-primary);
+        }
+        
+        .choice-item.correct {
+            border-color: var(--matcha-dark);
+            background: rgba(122, 132, 80, 0.15);
+        }
+        
+        .choice-number { font-weight: 600; color: var(--matcha-dark); margin-right: 10px; }
+        .choice-item.correct .correct-label { float: right; color: var(--matcha-dark); font-weight: 600; }
+        
+        .answer-section {
+            margin-top: 18px;
+            padding: 14px 18px;
+            background: rgba(122, 132, 80, 0.1);
+            border-radius: 12px;
+            border: 1px solid var(--matcha-light);
+        }
+        
+        .answer-label { font-weight: 600; color: var(--matcha-dark); }
+        
+        .explanation {
+            margin-top: 12px;
+            padding: 14px 18px;
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            line-height: 1.7;
+        }
+        
+        .result-stats { display: flex; gap: 16px; margin-bottom: 24px; flex-wrap: wrap; }
+        
+        .stat-item {
+            padding: 10px 18px;
+            background: var(--cream);
+            border-radius: 20px;
+            font-size: 0.9rem;
+            color: var(--text-primary);
+        }
+        
+        .stat-item span { color: var(--matcha-dark); font-weight: 600; }
+        
+        .error-message {
+            padding: 20px;
+            background: var(--strawberry-light);
+            border: 1px solid var(--strawberry);
+            border-radius: 12px;
+            color: #b34040;
+            margin-bottom: 20px;
+        }
+        
+        .no-passages {
+            padding: 20px;
+            background: var(--peach);
+            border: 1px solid var(--strawberry-light);
+            border-radius: 12px;
+            color: var(--text-secondary);
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>⚙️ <span class="highlight">Pre-setting</span> Reading Quiz Generator</h1>
+            <p class="subtitle">지문 사전 설정 기반 독해 문항 자동 생성 시스템</p>
+            <span class="badge">🤖 GPT-4o-mini | 📁 passages 폴더 기반 | 📊 Eligibility 자동 검사</span>
+        </header>
+        
+        <div class="main-grid">
+            <aside class="sidebar">
+                <!-- 지문 선택 -->
+                <div class="card">
+                    <div class="card-title">지문 선택</div>
+                    
+                    <select class="passage-select" id="passageSelect">
+                        <option value="">-- 지문을 선택하세요 --</option>
+                    </select>
+                    
+                    <div class="passage-info" id="passageInfo">
+                        <div class="passage-info-row">
+                            <span class="passage-info-label">지문 ID</span>
+                            <span class="passage-info-value" id="infoTextId">-</span>
+                        </div>
+                        <div class="passage-info-row">
+                            <span class="passage-info-label">Tone</span>
+                            <span class="passage-info-value" id="infoTone">-</span>
+                        </div>
+                        <div class="passage-info-row">
+                            <span class="passage-info-label">문장 길이</span>
+                            <span class="passage-info-value" id="infoLength">-</span>
+                        </div>
+                    </div>
+                    
+                    <div class="passage-preview" id="passagePreview"></div>
+                    
+                    <div class="folder-hint">
+                        💡 <strong>passages</strong> 폴더에 <strong>.txt</strong> 파일을 추가하면 자동으로 목록에 나타납니다.
+                    </div>
+                </div>
+                
+                <!-- 문항 유형 선택 -->
+                <div class="card">
+                    <div class="card-title">문항 유형 선택</div>
+                    
+                    <div class="eligibility-hint" id="eligibilityHint">
+                        ⬆️ 먼저 지문을 선택하면 출제 가능한 유형이 활성화됩니다.
+                    </div>
+                    
+                    <div class="type-grid" id="typeGrid"></div>
+                    
+                    <div class="selection-info">
+                        <div class="selection-count">
+                            <span>선택된 유형</span>
+                            <span class="count-number" id="selectionCount">0</span>
+                        </div>
+                    </div>
+                    
+                    <button class="btn btn-primary" id="generateBtn" disabled>
+                        ✨ AI 문항 생성
+                    </button>
+                </div>
+            </aside>
+            
+            <main class="result-area card">
+                <div class="card-title">생성된 문항</div>
+                
+                <div class="loading" id="loading">
+                    <div class="spinner"></div>
+                    <p class="loading-text">AI가 문항을 생성하고 있습니다...</p>
+                    <div class="loading-progress" id="loadingProgress">준비 중...</div>
+                </div>
+                
+                <div class="empty-state" id="emptyState">
+                    <div class="empty-icon">📚</div>
+                    <div class="empty-text">아직 생성된 문항이 없습니다</div>
+                    <div class="empty-subtext">지문을 선택하고 문항 유형을 선택한 후 생성 버튼을 클릭하세요</div>
+                </div>
+                
+                <div id="errorArea"></div>
+                <div class="result-stats" id="resultStats" style="display: none;">
+                    <div class="stat-item">총 <span id="totalCount">0</span>문항</div>
+                    <div class="stat-item">성공 <span id="successCount">0</span>개</div>
+                </div>
+                <div class="question-list" id="questionList"></div>
+            </main>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:3000';
+        
+        // 문항 유형 정의
+        const QUESTION_TYPES = [
+            { id: 'R_MAIN', name: '주제/요지' },
+            { id: 'R_TITLE', name: '제목' },
+            { id: 'R_DETAIL', name: '내용 일치' },
+            { id: 'R_INFER_BLANK', name: '빈칸 추론' },
+            { id: 'R_INFER_MEAN', name: '의미 추론' },
+            { id: 'V_SYNONYM', name: '유의어' },
+            { id: 'V_ANTONYM', name: '반의어' },
+            { id: 'V_MEANING', name: '어휘 의미' },
+            { id: 'R_FLOW_ODD', name: '무관한 문장' },
+            { id: 'R_FLOW_ORDER', name: '순서 배열' },
+            { id: 'R_FLOW_INSERT', name: '문장 위치' }
+        ];
+        
+        let selectedTypes = [];
+        let selectedTextId = null;
+        let textsData = [];
+        let eligibleTypes = []; // Eligibility 검사 결과
+        
+        // DOM 요소
+        const passageSelect = document.getElementById('passageSelect');
+        const passageInfo = document.getElementById('passageInfo');
+        const passagePreview = document.getElementById('passagePreview');
+        const typeGrid = document.getElementById('typeGrid');
+        const selectionCount = document.getElementById('selectionCount');
+        const generateBtn = document.getElementById('generateBtn');
+        const loading = document.getElementById('loading');
+        const loadingProgress = document.getElementById('loadingProgress');
+        const emptyState = document.getElementById('emptyState');
+        const errorArea = document.getElementById('errorArea');
+        const resultStats = document.getElementById('resultStats');
+        const questionList = document.getElementById('questionList');
+        
+        // 초기화
+        async function init() {
+            await loadTexts();
+            initTypeGrid();
+        }
+        
+        // 지문 목록 로드
+        async function loadTexts() {
+            try {
+                const response = await fetch(`${API_URL}/api/texts`);
+                const data = await response.json();
+                textsData = data.texts || [];
+                
+                if (textsData.length === 0) {
+                    passageSelect.innerHTML = '<option value="">-- passages 폴더에 .txt 파일이 없습니다 --</option>';
+                    return;
+                }
+                
+                passageSelect.innerHTML = '<option value="">-- 지문을 선택하세요 (' + textsData.length + '개) --</option>';
+                
+                textsData.forEach(t => {
+                    const hasFile = t.has_passage_file ? '✓' : '✗';
+                    const option = document.createElement('option');
+                    option.value = t.text_id;
+                    option.textContent = `${t.text_id}`;
+                    if (!t.has_passage_file) {
+                        option.disabled = true;
+                        option.textContent += ' (파일 없음)';
+                    }
+                    passageSelect.appendChild(option);
+                });
+                
+            } catch (error) {
+                console.error('지문 목록 로드 실패:', error);
+                passageSelect.innerHTML = '<option value="">-- 서버 연결 실패 --</option>';
+            }
+        }
+        
+        // 지문 선택 시
+        passageSelect.addEventListener('change', async () => {
+            const textId = passageSelect.value;
+            selectedTextId = textId;
+            
+            // 선택 초기화
+            selectedTypes = [];
+            selectionCount.textContent = '0';
+            eligibleTypes = [];
+            
+            if (!textId) {
+                passageInfo.classList.remove('show');
+                passagePreview.classList.remove('show');
+                resetTypeGrid();
+                updateGenerateButton();
+                return;
+            }
+            
+            // 지문 정보 표시
+            const textData = textsData.find(t => t.text_id === textId);
+            if (textData) {
+                document.getElementById('infoTextId').textContent = textData.text_id;
+                document.getElementById('infoTone').textContent = textData.tone || '-';
+                document.getElementById('infoLength').textContent = textData.sentence_length || '-';
+                passageInfo.classList.add('show');
+            }
+            
+            // Eligibility 검사 실행
+            await checkEligibility(textId);
+            
+            updateGenerateButton();
+        });
+        
+        // Eligibility 검사
+        async function checkEligibility(textId) {
+            try {
+                const response = await fetch(`${API_URL}/api/analyze`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ text_id: textId })
+                });
+                
+                const data = await response.json();
+                
+                if (data.eligibility) {
+                    // 출제 가능한 유형 목록 추출
+                    eligibleTypes = Object.entries(data.eligibility)
+                        .filter(([typeId, isEligible]) => isEligible)
+                        .map(([typeId]) => typeId);
+                    
+                    console.log('✅ Eligibility 검사 완료:', eligibleTypes);
+                    
+                    // UI 업데이트
+                    updateTypeGridEligibility();
+                } else {
+                    // 검사 실패 시 모든 유형 허용
+                    eligibleTypes = QUESTION_TYPES.map(t => t.id);
+                    resetTypeGrid();
+                }
+                
+            } catch (error) {
+                console.error('Eligibility 검사 실패:', error);
+                // 실패 시 모든 유형 허용
+                eligibleTypes = QUESTION_TYPES.map(t => t.id);
+                resetTypeGrid();
+            }
+        }
+        
+        // 유형 그리드 Eligibility 반영
+        function updateTypeGridEligibility() {
+            const eligibilityHint = document.getElementById('eligibilityHint');
+            let eligibleCount = 0;
+            
+            typeGrid.querySelectorAll('.type-item').forEach(item => {
+                const typeId = item.dataset.type;
+                const isEligible = eligibleTypes.includes(typeId);
+                
+                item.classList.remove('selected');
+                
+                if (isEligible) {
+                    item.classList.remove('disabled');
+                    item.style.opacity = '1';
+                    item.style.cursor = 'pointer';
+                    eligibleCount++;
+                } else {
+                    item.classList.add('disabled');
+                    item.style.opacity = '0.3';
+                    item.style.cursor = 'not-allowed';
+                }
+            });
+            
+            // 힌트 메시지 업데이트
+            if (eligibleCount > 0) {
+                eligibilityHint.innerHTML = `✅ 이 지문에서 <strong>${eligibleCount}개</strong> 유형 출제 가능 (비활성화된 유형은 조건 미충족)`;
+                eligibilityHint.style.background = 'rgba(122, 132, 80, 0.15)';
+                eligibilityHint.style.borderColor = '#b7c687';
+                eligibilityHint.style.color = '#7a8450';
+            } else {
+                eligibilityHint.innerHTML = `⚠️ 이 지문에서 출제 가능한 유형이 없습니다.`;
+                eligibilityHint.style.background = '#f9cdd5';
+                eligibilityHint.style.borderColor = '#f3bcc3';
+                eligibilityHint.style.color = '#b34040';
+            }
+            
+            selectedTypes = [];
+            selectionCount.textContent = '0';
+        }
+        
+        // 유형 그리드 초기화
+        function resetTypeGrid() {
+            typeGrid.querySelectorAll('.type-item').forEach(item => {
+                item.classList.remove('selected', 'disabled');
+                item.style.opacity = '0.5';
+                item.style.cursor = 'not-allowed';
+            });
+        }
+        
+        // 문항 유형 그리드 생성
+        function initTypeGrid() {
+            typeGrid.innerHTML = QUESTION_TYPES.map(type => `
+                <div class="type-item disabled" data-type="${type.id}" style="opacity: 0.5; cursor: not-allowed;">
+                    <div class="type-checkbox"></div>
+                    <span class="type-name">${type.name}</span>
+                </div>
+            `).join('');
+            
+            typeGrid.querySelectorAll('.type-item').forEach(item => {
+                item.addEventListener('click', () => toggleType(item));
+            });
+        }
+        
+        function toggleType(item) {
+            const typeId = item.dataset.type;
+            
+            // disabled된 유형은 클릭 불가
+            if (item.classList.contains('disabled')) {
+                return;
+            }
+            
+            if (item.classList.contains('selected')) {
+                item.classList.remove('selected');
+                selectedTypes = selectedTypes.filter(t => t !== typeId);
+            } else {
+                item.classList.add('selected');
+                selectedTypes.push(typeId);
+            }
+            
+            selectionCount.textContent = selectedTypes.length;
+            updateGenerateButton();
+        }
+        
+        function updateGenerateButton() {
+            const hasPassage = !!selectedTextId;
+            const hasTypes = selectedTypes.length > 0;
+            generateBtn.disabled = !(hasPassage && hasTypes);
+        }
+        
+        // 문항 생성
+        generateBtn.addEventListener('click', generateQuestions);
+        
+        async function generateQuestions() {
+            if (!selectedTextId || selectedTypes.length === 0) return;
+            
+            loading.classList.add('show');
+            emptyState.style.display = 'none';
+            questionList.innerHTML = '';
+            resultStats.style.display = 'none';
+            errorArea.innerHTML = '';
+            generateBtn.disabled = true;
+            
+            loadingProgress.textContent = `${selectedTextId} - ${selectedTypes.length}개 유형 생성 중...`;
+            
+            try {
+                const response = await fetch(`${API_URL}/api/generate`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        text_id: selectedTextId,
+                        force_types: selectedTypes
+                    })
+                });
+                
+                const data = await response.json();
+                
+                loading.classList.remove('show');
+                
+                if (data.success && data.questions.length > 0) {
+                    displayResults(data);
+                } else if (data.error) {
+                    showError(data.error);
+                } else if (data.errors && data.errors.length > 0) {
+                    showError(data.errors.map(e => e.error).join(', '));
+                } else {
+                    showError('문항 생성에 실패했습니다.');
+                }
+                
+            } catch (error) {
+                loading.classList.remove('show');
+                showError(`서버 연결 오류: ${error.message}`);
+            } finally {
+                generateBtn.disabled = false;
+                updateGenerateButton();
+            }
+        }
+        
+        function showError(message) {
+            errorArea.innerHTML = `<div class="error-message">❌ ${message}</div>`;
+            emptyState.style.display = 'flex';
+        }
+        
+        function displayResults(data) {
+            const { questions, summary } = data;
+            
+            document.getElementById('totalCount').textContent = summary.total;
+            document.getElementById('successCount').textContent = summary.success;
+            resultStats.style.display = 'flex';
+            
+            questionList.innerHTML = questions.map((q, idx) => {
+                const answer = parseInt(q.answer) || 1;
+                const choices = q.choices || [];
+                
+                return `
+                    <div class="question-card">
+                        <div class="question-header">
+                            <span class="question-number">Q${idx + 1}</span>
+                            <span class="question-type-badge">${q.type_id}</span>
+                        </div>
+                        <div class="question-text">${q.question || '문제 내용'}</div>
+                        <div class="question-choices">
+                            ${choices.map((c, i) => `
+                                <div class="choice-item ${i + 1 === answer ? 'correct' : ''}">
+                                    <span class="choice-number">${['①','②','③','④','⑤'][i]}</span>
+                                    ${c}
+                                    ${i + 1 === answer ? '<span class="correct-label">✓ 정답</span>' : ''}
+                                </div>
+                            `).join('')}
+                        </div>
+                        <div class="answer-section">
+                            <span class="answer-label">📌 정답: ${answer}번</span>
+                        </div>
+                        ${q.explanation ? `<div class="explanation">💡 ${q.explanation}</div>` : ''}
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        // 초기화 실행
+        init();
+    </script>
+</body>
+</html>
