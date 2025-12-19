@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "description": "Calendar API for MY Private Playground",
   "main": "src/server.js",
+  "engines": {
+    "node": ">=18"
+  },
   "scripts": {
     "start": "node src/server.js",
     "dev": "node src/server.js"
