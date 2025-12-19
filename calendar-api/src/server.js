@@ -1,6 +1,5 @@
 const express = require('express');
 const cors = require('cors');
-const { MongoClient, ServerApiVersion } = require('mongodb');
 const { v4: uuidv4 } = require('uuid');
 
 const app = express();
@@ -10,89 +9,40 @@ const PORT = process.env.PORT || 3001;
 app.use(cors());
 app.use(express.json());
 
-// MongoDB connection
-const uri = process.env.MONGODB_URI || 'mongodb://localhost:27017';
-const client = new MongoClient(uri, {
-    serverApi: {
-        version: ServerApiVersion.v1,
-        strict: true,
-        deprecationErrors: true,
-    }
-});
+// JSONBin.io configuration
+const JSONBIN_API_KEY = process.env.JSONBIN_API_KEY;
+const JSONBIN_BIN_ID = process.env.JSONBIN_BIN_ID;
 
-let db;
-let calendarCollection;
-
-async function connectDB() {
-    try {
-        await client.connect();
-        db = client.db('calendar_app');
-        calendarCollection = db.collection('calendar_data');
-        console.log('Connected to MongoDB');
-    } catch (error) {
-        console.error('MongoDB connection error:', error);
-        // Fallback to file-based storage for local development
-        console.log('Using file-based storage as fallback');
-    }
-}
-
-// Helper functions for MongoDB
-async function getDateData(date) {
-    if (!calendarCollection) return null;
-    try {
-        const doc = await calendarCollection.findOne({ date });
-        return doc ? doc.data : null;
-    } catch (error) {
-        console.error('Error getting date data:', error);
-        return null;
-    }
-}
-
-async function setDateData(date, data) {
-    if (!calendarCollection) return false;
-    try {
-        await calendarCollection.updateOne(
-            { date },
-            { $set: { date, data, updatedAt: new Date() } },
-            { upsert: true }
-        );
-        return true;
-    } catch (error) {
-        console.error('Error setting date data:', error);
-        return false;
-    }
-}
-
+// Helper functions for JSONBin.io
 async function getAllData() {
-    if (!calendarCollection) return {};
     try {
-        const docs = await calendarCollection.find({}).toArray();
-        const result = {};
-        docs.forEach(doc => {
-            result[doc.date] = doc.data;
+        const response = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}/latest`, {
+            headers: {
+                'X-Master-Key': JSONBIN_API_KEY
+            }
         });
-        return result;
+        const result = await response.json();
+        return result.record || {};
     } catch (error) {
-        console.error('Error getting all data:', error);
+        console.error('Error getting data:', error);
         return {};
     }
 }
 
-async function getMonthData(year, month) {
-    if (!calendarCollection) return {};
+async function saveAllData(data) {
     try {
-        const prefix = `${year}-${month.toString().padStart(2, '0')}`;
-        const docs = await calendarCollection.find({
-            date: { $regex: `^${prefix}` }
-        }).toArray();
-        const result = {};
-        docs.forEach(doc => {
-            result[doc.date] = doc.data;
+        const response = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Master-Key': JSONBIN_API_KEY
+            },
+            body: JSON.stringify(data)
         });
-        return result;
+        return response.ok;
     } catch (error) {
-        console.error('Error getting month data:', error);
-        return {};
+        console.error('Error saving data:', error);
+        return false;
     }
 }
 
@@ -161,6 +111,15 @@ const holidays = {
 
 // Routes
 
+// Debug: Check env vars
+app.get('/api/debug', (req, res) => {
+    res.json({
+        hasApiKey: !!JSONBIN_API_KEY,
+        hasBinId: !!JSONBIN_BIN_ID,
+        binIdLength: JSONBIN_BIN_ID ? JSONBIN_BIN_ID.length : 0
+    });
+});
+
 // Get holidays for a year
 app.get('/api/holidays/:year', (req, res) => {
     const year = parseInt(req.params.year);
@@ -176,15 +135,24 @@ app.get('/api/calendar/all', async (req, res) => {
 // Get calendar data for a month
 app.get('/api/calendar/:year/:month', async (req, res) => {
     const { year, month } = req.params;
-    const data = await getMonthData(parseInt(year), parseInt(month));
-    res.json(data);
+    const allData = await getAllData();
+    const prefix = `${year}-${month.toString().padStart(2, '0')}`;
+    
+    const monthData = {};
+    Object.keys(allData).forEach(date => {
+        if (date.startsWith(prefix)) {
+            monthData[date] = allData[date];
+        }
+    });
+    
+    res.json(monthData);
 });
 
 // Get calendar data for a specific date
 app.get('/api/calendar/:date', async (req, res) => {
     const { date } = req.params;
-    const data = await getDateData(date);
-    res.json(data || {});
+    const allData = await getAllData();
+    res.json(allData[date] || {});
 });
 
 // Add schedule
@@ -196,10 +164,14 @@ app.post('/api/calendar/:date/schedule', async (req, res) => {
         return res.status(400).json({ error: 'Content and tag are required' });
     }
     
-    let data = await getDateData(date) || { schedules: [], exercise: null };
+    const allData = await getAllData();
     
-    if (!data.schedules) {
-        data.schedules = [];
+    if (!allData[date]) {
+        allData[date] = { schedules: [], exercise: null };
+    }
+    
+    if (!allData[date].schedules) {
+        allData[date].schedules = [];
     }
     
     const schedule = {
@@ -213,8 +185,8 @@ app.post('/api/calendar/:date/schedule', async (req, res) => {
         createdAt: new Date().toISOString()
     };
     
-    data.schedules.push(schedule);
-    await setDateData(date, data);
+    allData[date].schedules.push(schedule);
+    await saveAllData(allData);
     
     res.json({ success: true, schedule });
 });
@@ -224,43 +196,43 @@ app.put('/api/calendar/:date/schedule/:id', async (req, res) => {
     const { date, id } = req.params;
     const { content, tag, repeat, startDate, endDate } = req.body;
     
-    let data = await getDateData(date);
+    const allData = await getAllData();
     
-    if (!data || !data.schedules) {
+    if (!allData[date] || !allData[date].schedules) {
         return res.status(404).json({ error: 'Schedule not found' });
     }
     
-    const scheduleIdx = data.schedules.findIndex(s => s.id === id);
+    const scheduleIdx = allData[date].schedules.findIndex(s => s.id === id);
     if (scheduleIdx === -1) {
         return res.status(404).json({ error: 'Schedule not found' });
     }
     
-    data.schedules[scheduleIdx] = {
-        ...data.schedules[scheduleIdx],
-        content: content || data.schedules[scheduleIdx].content,
-        tag: tag || data.schedules[scheduleIdx].tag,
-        repeat: repeat !== undefined ? repeat : data.schedules[scheduleIdx].repeat,
-        startDate: startDate !== undefined ? startDate : data.schedules[scheduleIdx].startDate,
-        endDate: endDate !== undefined ? endDate : data.schedules[scheduleIdx].endDate,
+    allData[date].schedules[scheduleIdx] = {
+        ...allData[date].schedules[scheduleIdx],
+        content: content || allData[date].schedules[scheduleIdx].content,
+        tag: tag || allData[date].schedules[scheduleIdx].tag,
+        repeat: repeat !== undefined ? repeat : allData[date].schedules[scheduleIdx].repeat,
+        startDate: startDate !== undefined ? startDate : allData[date].schedules[scheduleIdx].startDate,
+        endDate: endDate !== undefined ? endDate : allData[date].schedules[scheduleIdx].endDate,
         updatedAt: new Date().toISOString()
     };
     
-    await setDateData(date, data);
-    res.json({ success: true, schedule: data.schedules[scheduleIdx] });
+    await saveAllData(allData);
+    res.json({ success: true, schedule: allData[date].schedules[scheduleIdx] });
 });
 
 // Delete schedule
 app.delete('/api/calendar/:date/schedule/:id', async (req, res) => {
     const { date, id } = req.params;
     
-    let data = await getDateData(date);
+    const allData = await getAllData();
     
-    if (!data || !data.schedules) {
+    if (!allData[date] || !allData[date].schedules) {
         return res.status(404).json({ error: 'Schedule not found' });
     }
     
-    data.schedules = data.schedules.filter(s => s.id !== id);
-    await setDateData(date, data);
+    allData[date].schedules = allData[date].schedules.filter(s => s.id !== id);
+    await saveAllData(allData);
     
     res.json({ success: true });
 });
@@ -270,29 +242,33 @@ app.post('/api/calendar/:date/exercise', async (req, res) => {
     const { date } = req.params;
     const { weight, nonWeight, source } = req.body;
     
-    let data = await getDateData(date) || { schedules: [], exercise: null };
+    const allData = await getAllData();
     
-    data.exercise = {
+    if (!allData[date]) {
+        allData[date] = { schedules: [], exercise: null };
+    }
+    
+    allData[date].exercise = {
         weight: weight || [],
         nonWeight: nonWeight || [],
         source: source || 'monthly',
         updatedAt: new Date().toISOString()
     };
     
-    await setDateData(date, data);
+    await saveAllData(allData);
     
-    res.json({ success: true, exercise: data.exercise });
+    res.json({ success: true, exercise: allData[date].exercise });
 });
 
 // Delete exercise
 app.delete('/api/calendar/:date/exercise', async (req, res) => {
     const { date } = req.params;
     
-    let data = await getDateData(date);
+    const allData = await getAllData();
     
-    if (data) {
-        data.exercise = null;
-        await setDateData(date, data);
+    if (allData[date]) {
+        allData[date].exercise = null;
+        await saveAllData(allData);
     }
     
     res.json({ success: true });
@@ -303,36 +279,38 @@ app.post('/api/calendar/:date/memo', async (req, res) => {
     const { date } = req.params;
     const { memo } = req.body;
     
-    let data = await getDateData(date) || { schedules: [], exercise: null, memo: '' };
+    const allData = await getAllData();
     
-    data.memo = memo || '';
-    data.memoUpdatedAt = new Date().toISOString();
+    if (!allData[date]) {
+        allData[date] = { schedules: [], exercise: null, memo: '' };
+    }
     
-    await setDateData(date, data);
+    allData[date].memo = memo || '';
+    allData[date].memoUpdatedAt = new Date().toISOString();
     
-    res.json({ success: true, memo: data.memo });
+    await saveAllData(allData);
+    
+    res.json({ success: true, memo: allData[date].memo });
 });
 
 // Delete memo
 app.delete('/api/calendar/:date/memo', async (req, res) => {
     const { date } = req.params;
     
-    let data = await getDateData(date);
+    const allData = await getAllData();
     
-    if (data) {
-        data.memo = '';
-        delete data.memoUpdatedAt;
-        await setDateData(date, data);
+    if (allData[date]) {
+        allData[date].memo = '';
+        delete allData[date].memoUpdatedAt;
+        await saveAllData(allData);
     }
     
     res.json({ success: true });
 });
 
 // Start server
-connectDB().then(() => {
-    app.listen(PORT, () => {
-        console.log(`Calendar API server running on http://localhost:${PORT}`);
-    });
+app.listen(PORT, () => {
+    console.log(`Calendar API server running on http://localhost:${PORT}`);
 });
 
 // Export for Vercel
