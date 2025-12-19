@@ -1,0 +1,154 @@
+{
+  "2025-12-26": {
+    "schedules": [
+      {
+        "id": "0eada318-83a8-4136-8255-2485ad6f9c62",
+        "content": "애니메이션 음악회 w룽협",
+        "tag": "Private",
+        "source": "monthly",
+        "createdAt": "2025-12-19T06:25:51.324Z",
+        "repeat": "none",
+        "updatedAt": "2025-12-19T06:38:54.060Z"
+      }
+    ],
+    "exercise": null
+  },
+  "2025-12-18": {
+    "schedules": [],
+    "exercise": {
+      "weight": [
+        {
+          "type": "와이드 스쿼트",
+          "kg": 5,
+          "sets": 3,
+          "reps": 15
+        },
+        {
+          "type": "스쿼트",
+          "kg": 20,
+          "sets": 3,
+          "reps": 15
+        },
+        {
+          "type": "레그프레스",
+          "kg": 60,
+          "sets": 3,
+          "reps": 15
+        }
+      ],
+      "nonWeight": [],
+      "source": "monthly",
+      "updatedAt": "2025-12-19T06:39:00.916Z"
+    },
+    "memo": "카페인이 부족했는지 하루 종일 스트레스가 심했는지 너무 피곤했음.\n저녁에 초코칩 쿠키랑 치킨으로 폭주했는데, 아무래도 이틀 정도 칼로리가 부족해지면 피할 수 없이 폭식이 오는 듯 함. 좀더 신경 써서 먹어야겠음.",
+    "memoUpdatedAt": "2025-12-19T06:49:28.613Z"
+  },
+  "2025-12-31": {
+    "schedules": [
+      {
+        "id": "3e50c80a-72e4-4150-8027-b74b5f9401ba",
+        "content": "민채 생일",
+        "tag": "Birthday",
+        "source": "monthly",
+        "createdAt": "2025-12-19T06:27:46.772Z",
+        "repeat": "yearly",
+        "updatedAt": "2025-12-19T06:38:46.903Z"
+      }
+    ],
+    "exercise": null
+  },
+  "2025-12-20": {
+    "schedules": [
+      {
+        "id": "c7589689-ac04-400a-957d-1914525bb598",
+        "content": "크리스마스 파티 w둡쪠룽",
+        "tag": "Private",
+        "source": "monthly",
+        "repeat": "none",
+        "createdAt": "2025-12-19T06:35:54.725Z"
+      }
+    ],
+    "exercise": null
+  },
+  "2026-01-02": {
+    "schedules": [
+      {
+        "id": "4595e69c-4538-46e1-8b65-a02d13c1244d",
+        "content": "엄마",
+        "tag": "Birthday",
+        "source": "monthly",
+        "repeat": "yearly",
+        "createdAt": "2025-12-19T06:36:16.111Z"
+      }
+    ],
+    "exercise": null
+  },
+  "2026-01-19": {
+    "schedules": [
+      {
+        "id": "93a3cdef-19a3-45ca-911c-5e310983d474",
+        "content": "쏭쑤",
+        "tag": "Birthday",
+        "source": "monthly",
+        "repeat": "yearly",
+        "createdAt": "2025-12-19T06:36:31.546Z"
+      }
+    ],
+    "exercise": null
+  },
+  "2026-01-22": {
+    "schedules": [
+      {
+        "id": "288223ea-015c-45f3-9ed1-dd050347ed7d",
+        "content": "아빠",
+        "tag": "Birthday",
+        "source": "monthly",
+        "repeat": "yearly",
+        "createdAt": "2025-12-19T06:36:44.825Z"
+      }
+    ],
+    "exercise": null
+  },
+  "2026-01-16": {
+    "schedules": [
+      {
+        "id": "ab4084e9-c523-4040-a095-ee156134836e",
+        "content": "인경실장님",
+        "tag": "Birthday",
+        "source": "monthly",
+        "repeat": "yearly",
+        "createdAt": "2025-12-19T06:40:44.758Z"
+      }
+    ],
+    "exercise": null
+  },
+  "2025-12-19": {
+    "schedules": [],
+    "exercise": {
+      "weight": [],
+      "nonWeight": [
+        {
+          "type": "천국의 계단",
+          "duration": 25
+        }
+      ],
+      "source": "monthly",
+      "updatedAt": "2025-12-19T06:41:31.099Z"
+    }
+  },
+  "2026-02-14": {
+    "schedules": [
+      {
+        "id": "f2d2e609-ae1b-4654-8ef3-139d3b1f0f9b",
+        "content": "설 제주도",
+        "tag": "Private",
+        "source": "monthly",
+        "repeat": "none",
+        "startDate": "2026-02-14",
+        "endDate": "2026-02-17",
+        "createdAt": "2025-12-19T07:02:31.426Z"
+      }
+    ],
+    "exercise": null
+  }
+}

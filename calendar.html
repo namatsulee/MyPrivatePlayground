@@ -1,0 +1,2884 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calendar - MY Private Playground</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=DM+Sans:wght@400;500;600;700&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        /* Matcha Strawberry Palette */
+        :root {
+            --matcha-dark: #7a8450;
+            --matcha-light: #b7c687;
+            --cream: #e1e2c3;
+            --strawberry-light: #f9cdd5;
+            --peach: #f8dcd9;
+            --strawberry: #f3bcc3;
+            
+            --bg-primary: #fdfcf9;
+            --bg-secondary: #f8f7f2;
+            --bg-card: #ffffff;
+            --text-primary: #4a4a3a;
+            --text-secondary: #7a7a6a;
+            --text-muted: #a0a090;
+            --border-color: #e8e7e0;
+            
+            /* Tag Colors */
+            --tag-private: #7a8450;
+            --tag-work: #b7c687;
+            --tag-birthday: #f3bcc3;
+            
+            /* Holiday */
+            --holiday-color: #e74c3c;
+        }
+        
+        body {
+            font-family: 'Inter', 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(180deg, var(--bg-primary) 0%, var(--cream) 100%);
+            min-height: 100vh;
+            color: var(--text-primary);
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 20px 60px 40px;
+        }
+        
+        @media (min-width: 1800px) {
+            .container {
+                max-width: 90%;
+            }
+        }
+        
+        /* Header */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+        
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .back-btn {
+            width: 36px;
+            height: 36px;
+            border: 2px solid var(--border-color);
+            background: var(--bg-card);
+            border-radius: 10px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            color: var(--text-primary);
+        }
+        
+        .back-btn:hover {
+            background: var(--cream);
+            border-color: var(--matcha-light);
+        }
+        
+        .back-btn svg {
+            width: 18px;
+            height: 18px;
+            fill: currentColor;
+        }
+        
+        h1 {
+            font-family: 'DM Sans', sans-serif;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+        
+        h1 span {
+            background: linear-gradient(135deg, var(--matcha-dark), var(--strawberry));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        /* Tab Switch */
+        .tab-switch {
+            display: flex;
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            padding: 4px;
+            border: 2px solid var(--border-color);
+        }
+        
+        .tab-btn {
+            padding: 8px 18px;
+            border: none;
+            background: transparent;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: var(--text-secondary);
+            cursor: pointer;
+            border-radius: 10px;
+            transition: all 0.3s ease;
+        }
+        
+        .tab-btn.active {
+            background: var(--bg-card);
+            color: var(--text-primary);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        }
+        
+        .tab-btn:hover:not(.active) {
+            color: var(--text-primary);
+        }
+        
+        /* Calendar Container */
+        .calendar-wrapper {
+            position: relative;
+            display: flex;
+            align-items: stretch;
+        }
+        
+        /* Navigation Arrows */
+        .nav-arrow {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            opacity: 0;
+            transition: all 0.3s ease;
+            z-index: 10;
+        }
+        
+        .nav-arrow:hover {
+            opacity: 1;
+        }
+        
+        .nav-arrow.left {
+            left: -60px;
+        }
+        
+        .nav-arrow.right {
+            right: -60px;
+        }
+        
+        .nav-arrow-inner {
+            width: 48px;
+            height: 48px;
+            background: var(--bg-card);
+            border: 2px solid var(--border-color);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+        }
+        
+        .nav-arrow:hover .nav-arrow-inner {
+            background: var(--matcha-light);
+            border-color: var(--matcha-dark);
+        }
+        
+        .nav-arrow svg {
+            width: 24px;
+            height: 24px;
+            fill: var(--text-secondary);
+        }
+        
+        .nav-arrow:hover svg {
+            fill: var(--text-primary);
+        }
+        
+        /* Calendar */
+        .calendar {
+            flex: 1;
+            background: var(--bg-card);
+            border-radius: 24px;
+            box-shadow: 0 4px 20px rgba(122, 132, 80, 0.1);
+            border: 2px solid var(--border-color);
+            overflow: hidden;
+        }
+        
+        .calendar-header {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 16px;
+            background: var(--bg-secondary);
+            border-bottom: 2px solid var(--border-color);
+        }
+        
+        .month-year {
+            font-family: 'DM Sans', sans-serif;
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+        
+        .weekdays {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            background: var(--cream);
+            border-bottom: 2px solid var(--border-color);
+        }
+        
+        .weekday {
+            padding: 8px;
+            text-align: center;
+            font-weight: 600;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+        
+        .weekday:first-child {
+            color: var(--holiday-color);
+        }
+        
+        .weekday:last-child {
+            color: #3498db;
+        }
+        
+        .days {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            overflow: visible;
+        }
+        
+        .day {
+            min-height: 120px;
+            padding: 10px;
+            border-right: 1px solid var(--border-color);
+            border-bottom: 1px solid var(--border-color);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            position: relative;
+            overflow: visible;
+        }
+        
+        .day:nth-child(7n) {
+            border-right: none;
+        }
+        
+        .day:hover {
+            background: var(--bg-secondary);
+        }
+        
+        .day.other-month {
+            background: var(--bg-secondary);
+            opacity: 0.5;
+        }
+        
+        .day.today {
+            background: rgba(183, 198, 135, 0.2);
+        }
+        
+        .day-number {
+            font-weight: 600;
+            font-size: 0.9rem;
+            margin-bottom: 4px;
+        }
+        
+        .day:nth-child(7n+1) .day-number {
+            color: var(--holiday-color);
+        }
+        
+        .day:nth-child(7n) .day-number {
+            color: #3498db;
+        }
+        
+        .day.holiday .day-number {
+            color: var(--holiday-color);
+        }
+        
+        .day-content {
+            font-size: 0.75rem;
+            overflow: visible;
+        }
+        
+        .schedule-item {
+            padding: 4px 6px;
+            min-height: 22px;
+            border-radius: 4px;
+            margin-bottom: 2px;
+            font-size: 0.7rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            color: white;
+            box-sizing: border-box;
+            display: flex;
+            align-items: center;
+        }
+        
+        .schedule-item.private {
+            background: var(--tag-private);
+        }
+        
+        .schedule-item.work {
+            background: var(--tag-work);
+            color: var(--text-primary);
+        }
+        
+        .schedule-item.birthday {
+            background: var(--tag-birthday);
+            color: var(--text-primary);
+        }
+        
+        .exercise-summary {
+            font-size: 0.7rem;
+            color: var(--matcha-dark);
+            font-weight: 600;
+            margin-bottom: 2px;
+            background: rgba(183, 198, 135, 0.35);
+            padding: 4px 6px;
+            min-height: 22px;
+            border-radius: 4px;
+            line-height: 1.3;
+            box-sizing: border-box;
+            display: flex;
+            align-items: center;
+            border: 1px solid rgba(122, 132, 80, 0.3);
+        }
+        
+        .holiday-name {
+            font-size: 0.7rem;
+            color: var(--holiday-color);
+            font-weight: 500;
+            min-height: 22px;
+            display: flex;
+            align-items: center;
+            margin-bottom: 2px;
+        }
+        
+        /* Daily View */
+        .daily-view {
+            display: none;
+        }
+        
+        .daily-view.active {
+            display: block;
+        }
+        
+        .monthly-view {
+            display: block;
+        }
+        
+        .monthly-view.hidden {
+            display: none;
+        }
+        
+        .daily-header {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        
+        .date-nav-btn {
+            width: 40px;
+            height: 40px;
+            border: 2px solid var(--border-color);
+            background: var(--bg-card);
+            border-radius: 10px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+        
+        .date-nav-btn:hover {
+            background: var(--cream);
+            border-color: var(--matcha-light);
+        }
+        
+        .date-nav-btn svg {
+            width: 18px;
+            height: 18px;
+            fill: var(--text-secondary);
+        }
+        
+        .current-date {
+            font-family: 'DM Sans', sans-serif;
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            min-width: 200px;
+            text-align: center;
+        }
+        
+        .daily-content {
+            background: var(--bg-card);
+            border-radius: 24px;
+            box-shadow: 0 4px 20px rgba(122, 132, 80, 0.1);
+            border: 2px solid var(--border-color);
+            padding: 24px;
+        }
+        
+        .daily-section {
+            margin-bottom: 24px;
+        }
+        
+        .daily-section:last-child {
+            margin-bottom: 0;
+        }
+        
+        .section-title {
+            font-family: 'DM Sans', sans-serif;
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .section-title-icon {
+            width: 28px;
+            height: 28px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .section-title-icon.schedule {
+            background: linear-gradient(135deg, var(--matcha-dark), var(--matcha-light));
+        }
+        
+        .section-title-icon.exercise {
+            background: linear-gradient(135deg, var(--strawberry), var(--strawberry-light));
+        }
+        
+        .section-title-icon svg {
+            width: 16px;
+            height: 16px;
+            fill: white;
+        }
+        
+        .schedule-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        
+        .schedule-list-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+        }
+        
+        .tag-badge {
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        
+        .tag-badge.private {
+            background: var(--tag-private);
+            color: white;
+        }
+        
+        .tag-badge.work {
+            background: var(--tag-work);
+            color: var(--text-primary);
+        }
+        
+        .tag-badge.birthday {
+            background: var(--tag-birthday);
+            color: var(--text-primary);
+        }
+        
+        .schedule-content {
+            flex: 1;
+            font-size: 0.95rem;
+            color: var(--text-primary);
+        }
+        
+        .exercise-card {
+            background: var(--bg-secondary);
+            border-radius: 16px;
+            padding: 20px;
+            border: 1px solid var(--border-color);
+        }
+        
+        .exercise-subsection {
+            margin-bottom: 16px;
+        }
+        
+        .exercise-subsection:last-child {
+            margin-bottom: 0;
+        }
+        
+        .exercise-subsection-title {
+            font-weight: 600;
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            margin-bottom: 12px;
+        }
+        
+        .weight-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .weight-table th,
+        .weight-table td {
+            padding: 10px 12px;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+            font-size: 0.85rem;
+        }
+        
+        .weight-table th {
+            background: var(--cream);
+            font-weight: 600;
+            color: var(--text-secondary);
+        }
+        
+        .weight-table tr:last-child td {
+            border-bottom: none;
+        }
+        
+        .total-weight {
+            margin-top: 16px;
+            padding: 12px 16px;
+            background: linear-gradient(135deg, var(--matcha-light), var(--cream));
+            border-radius: 10px;
+            font-weight: 600;
+            color: var(--text-primary);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .total-weight-value {
+            font-size: 1.2rem;
+            color: var(--matcha-dark);
+        }
+        
+        .nonweight-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        
+        .nonweight-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 14px;
+            background: var(--bg-card);
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--text-muted);
+        }
+        
+        .empty-state-icon {
+            width: 64px;
+            height: 64px;
+            margin: 0 auto 16px;
+            background: var(--bg-secondary);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .empty-state-icon svg {
+            width: 32px;
+            height: 32px;
+            fill: var(--text-muted);
+        }
+        
+        /* Memo Section */
+        .memo-section {
+            margin-top: 24px;
+        }
+        
+        .memo-card {
+            background: var(--bg-secondary);
+            border-radius: 16px;
+            padding: 20px;
+            border: 1px solid var(--border-color);
+        }
+        
+        .memo-textarea {
+            width: 100%;
+            min-height: 150px;
+            padding: 14px 16px;
+            border: 2px solid var(--border-color);
+            border-radius: 12px;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.95rem;
+            color: var(--text-primary);
+            background: var(--bg-card);
+            resize: vertical;
+            line-height: 1.6;
+            transition: all 0.3s ease;
+        }
+        
+        .memo-textarea:focus {
+            outline: none;
+            border-color: var(--matcha-light);
+            box-shadow: 0 0 0 3px rgba(183, 198, 135, 0.2);
+        }
+        
+        .memo-textarea::placeholder {
+            color: var(--text-muted);
+        }
+        
+        .memo-footer {
+            display: flex;
+            justify-content: flex-end;
+            margin-top: 12px;
+            gap: 8px;
+        }
+        
+        .memo-save-btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 10px;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: linear-gradient(135deg, var(--matcha-dark), var(--matcha-light));
+            color: white;
+        }
+        
+        .memo-save-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(122, 132, 80, 0.3);
+        }
+        
+        .memo-save-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .memo-status {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .memo-status.saved {
+            color: var(--matcha-dark);
+        }
+        
+        .section-title-icon.memo {
+            background: linear-gradient(135deg, var(--peach), var(--strawberry-light));
+        }
+        
+        /* Input Choice Popup */
+        .choice-popup {
+            position: fixed;
+            display: none;
+            z-index: 100;
+        }
+        
+        .choice-popup.active {
+            display: block;
+        }
+        
+        .choice-popup-content {
+            background: var(--bg-card);
+            border-radius: 16px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            border: 2px solid var(--border-color);
+            padding: 8px;
+            display: flex;
+            gap: 8px;
+        }
+        
+        .choice-btn {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 10px;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .choice-btn.schedule {
+            background: linear-gradient(135deg, var(--matcha-dark), var(--matcha-light));
+            color: white;
+        }
+        
+        .choice-btn.exercise {
+            background: linear-gradient(135deg, var(--strawberry), var(--strawberry-light));
+            color: var(--text-primary);
+        }
+        
+        .choice-btn:hover {
+            transform: scale(1.05);
+        }
+        
+        /* Modal Overlay */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(74, 74, 58, 0.5);
+            backdrop-filter: blur(8px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+        
+        .modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        .modal {
+            background: var(--bg-card);
+            border-radius: 24px;
+            width: 90%;
+            max-width: 600px;
+            max-height: 85vh;
+            overflow-y: auto;
+            transform: translateY(-30px) scale(0.95);
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 25px 80px rgba(122, 132, 80, 0.25);
+            border: 2px solid var(--border-color);
+        }
+        
+        .modal-overlay.active .modal {
+            transform: translateY(0) scale(1);
+        }
+        
+        .modal-header {
+            padding: 24px 28px;
+            border-bottom: 2px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: var(--bg-secondary);
+            border-radius: 22px 22px 0 0;
+        }
+        
+        .modal-title {
+            font-family: 'DM Sans', sans-serif;
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+        
+        .modal-close {
+            width: 36px;
+            height: 36px;
+            border: none;
+            background: var(--strawberry-light);
+            border-radius: 10px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+        
+        .modal-close:hover {
+            background: var(--strawberry);
+            transform: rotate(90deg);
+        }
+        
+        .modal-close svg {
+            width: 18px;
+            height: 18px;
+            fill: currentColor;
+        }
+        
+        .modal-body {
+            padding: 28px;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-group:last-child {
+            margin-bottom: 0;
+        }
+        
+        .form-label {
+            display: block;
+            font-weight: 600;
+            font-size: 0.9rem;
+            color: var(--text-primary);
+            margin-bottom: 8px;
+        }
+        
+        .form-input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid var(--border-color);
+            border-radius: 12px;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.95rem;
+            color: var(--text-primary);
+            background: var(--bg-secondary);
+            transition: all 0.3s ease;
+        }
+        
+        .form-input:focus {
+            outline: none;
+            border-color: var(--matcha-light);
+            background: var(--bg-card);
+        }
+        
+        .form-input::placeholder {
+            color: var(--text-muted);
+        }
+        
+        .tag-selector {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .tag-option {
+            flex: 1;
+            padding: 12px;
+            border: 2px solid var(--border-color);
+            border-radius: 12px;
+            background: var(--bg-secondary);
+            cursor: pointer;
+            text-align: center;
+            font-weight: 600;
+            font-size: 0.85rem;
+            transition: all 0.3s ease;
+        }
+        
+        .tag-option:hover {
+            border-color: var(--matcha-light);
+        }
+        
+        .tag-option.selected {
+            border-width: 3px;
+        }
+        
+        .tag-option.private.selected {
+            background: var(--tag-private);
+            color: white;
+            border-color: var(--tag-private);
+        }
+        
+        .tag-option.work.selected {
+            background: var(--tag-work);
+            color: var(--text-primary);
+            border-color: var(--tag-work);
+        }
+        
+        .tag-option.birthday.selected {
+            background: var(--tag-birthday);
+            color: var(--text-primary);
+            border-color: var(--tag-birthday);
+        }
+        
+        /* Date Range Selector */
+        .date-range-selector {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        
+        .date-input {
+            flex: 1;
+            min-width: 140px;
+        }
+        
+        .date-range-separator {
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+        
+        .date-clear-btn {
+            padding: 10px 14px;
+            border: 2px solid var(--border-color);
+            background: var(--bg-secondary);
+            border-radius: 10px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .date-clear-btn:hover {
+            background: var(--strawberry-light);
+            border-color: var(--strawberry);
+        }
+        
+        .form-hint {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-top: 6px;
+        }
+        
+        /* Multi-day schedule bar */
+        .schedule-bar-container {
+            position: relative;
+            margin-bottom: 2px;
+        }
+        
+        .schedule-bar {
+            padding: 4px 6px;
+            min-height: 22px;
+            font-size: 0.7rem;
+            font-weight: 500;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            border-radius: 0;
+            margin: 0 -11px;
+            margin-bottom: 2px;
+            padding-left: 10px;
+            padding-right: 10px;
+            box-sizing: border-box;
+            position: relative;
+            z-index: 1;
+            display: flex;
+            align-items: center;
+        }
+        
+        .schedule-bar.start {
+            border-radius: 4px 0 0 4px;
+            margin-left: 0;
+            margin-right: -11px;
+        }
+        
+        .schedule-bar.end {
+            border-radius: 0 4px 4px 0;
+            margin-left: -11px;
+            margin-right: 0;
+        }
+        
+        .schedule-bar.single {
+            border-radius: 4px;
+            margin-left: 0;
+            margin-right: 0;
+        }
+        
+        .schedule-bar.start.end {
+            border-radius: 4px;
+            margin-left: 0;
+            margin-right: 0;
+        }
+        
+        /* Middle part of multi-day bar */
+        .schedule-bar:not(.start):not(.end):not(.single) {
+            margin-left: -11px;
+            margin-right: -11px;
+        }
+        
+        .schedule-bar.private {
+            background: var(--tag-private);
+            color: white;
+        }
+        
+        .schedule-bar.work {
+            background: var(--tag-work);
+            color: var(--text-primary);
+        }
+        
+        .schedule-bar.birthday {
+            background: var(--tag-birthday);
+            color: var(--text-primary);
+        }
+        
+        .repeat-selector {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        
+        .repeat-option {
+            padding: 10px 16px;
+            border: 2px solid var(--border-color);
+            border-radius: 10px;
+            background: var(--bg-secondary);
+            cursor: pointer;
+            font-weight: 500;
+            font-size: 0.85rem;
+            transition: all 0.3s ease;
+            color: var(--text-secondary);
+        }
+        
+        .repeat-option:hover {
+            border-color: var(--matcha-light);
+            color: var(--text-primary);
+        }
+        
+        .repeat-option.selected {
+            background: var(--matcha-light);
+            color: var(--text-primary);
+            border-color: var(--matcha-dark);
+        }
+        
+        .repeat-badge {
+            font-size: 0.6rem;
+            padding: 1px 4px;
+            border-radius: 3px;
+            background: var(--peach);
+            color: var(--text-secondary);
+            margin-left: 4px;
+        }
+        
+        /* Context Menu */
+        .context-menu {
+            position: fixed;
+            display: none;
+            z-index: 1001;
+            background: var(--bg-card);
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            border: 2px solid var(--border-color);
+            padding: 8px;
+            min-width: 120px;
+        }
+        
+        .context-menu.active {
+            display: block;
+        }
+        
+        .context-menu-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 14px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: var(--text-primary);
+            transition: all 0.2s ease;
+        }
+        
+        .context-menu-item:hover {
+            background: var(--bg-secondary);
+        }
+        
+        .context-menu-item svg {
+            width: 18px;
+            height: 18px;
+            fill: var(--text-secondary);
+        }
+        
+        .context-menu-item.delete {
+            color: #e74c3c;
+        }
+        
+        .context-menu-item.delete:hover {
+            background: rgba(231, 76, 60, 0.1);
+        }
+        
+        .context-menu-item.delete svg {
+            fill: #e74c3c;
+        }
+        
+        /* Make schedule items right-clickable */
+        .schedule-item {
+            cursor: context-menu;
+        }
+        
+        .schedule-list-item {
+            cursor: context-menu;
+        }
+        
+        .exercise-card {
+            cursor: context-menu;
+        }
+        
+        .exercise-section {
+            margin-bottom: 24px;
+        }
+        
+        .exercise-section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+        
+        .exercise-section-title {
+            font-weight: 600;
+            font-size: 1rem;
+            color: var(--text-primary);
+        }
+        
+        .add-row-btn {
+            padding: 6px 12px;
+            border: 2px solid var(--matcha-light);
+            background: transparent;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--matcha-dark);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .add-row-btn:hover {
+            background: var(--matcha-light);
+            color: white;
+        }
+        
+        .weight-input-row {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr 1fr auto;
+            gap: 8px;
+            margin-bottom: 8px;
+            align-items: center;
+        }
+        
+        .weight-input-row input {
+            padding: 10px 12px;
+            border: 2px solid var(--border-color);
+            border-radius: 10px;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.85rem;
+            color: var(--text-primary);
+            background: var(--bg-secondary);
+        }
+        
+        .weight-input-row input:focus {
+            outline: none;
+            border-color: var(--matcha-light);
+            background: var(--bg-card);
+        }
+        
+        .weight-input-row input::placeholder {
+            color: var(--text-muted);
+            font-size: 0.75rem;
+        }
+        
+        .remove-row-btn {
+            width: 32px;
+            height: 32px;
+            border: none;
+            background: var(--strawberry-light);
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+        
+        .remove-row-btn:hover {
+            background: var(--strawberry);
+        }
+        
+        .remove-row-btn svg {
+            width: 16px;
+            height: 16px;
+            fill: var(--text-secondary);
+        }
+        
+        .nonweight-input-row {
+            display: grid;
+            grid-template-columns: 2fr 1fr auto;
+            gap: 8px;
+            margin-bottom: 8px;
+            align-items: center;
+        }
+        
+        .nonweight-input-row input {
+            padding: 10px 12px;
+            border: 2px solid var(--border-color);
+            border-radius: 10px;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.85rem;
+            color: var(--text-primary);
+            background: var(--bg-secondary);
+        }
+        
+        .nonweight-input-row input:focus {
+            outline: none;
+            border-color: var(--matcha-light);
+            background: var(--bg-card);
+        }
+        
+        .modal-footer {
+            padding: 20px 28px;
+            border-top: 2px solid var(--border-color);
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+        }
+        
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 12px;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-cancel {
+            background: var(--bg-secondary);
+            color: var(--text-secondary);
+            border: 2px solid var(--border-color);
+        }
+        
+        .btn-cancel:hover {
+            background: var(--cream);
+        }
+        
+        .btn-save {
+            background: linear-gradient(135deg, var(--matcha-dark), var(--matcha-light));
+            color: white;
+        }
+        
+        .btn-save:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(122, 132, 80, 0.3);
+        }
+        
+        /* Responsive */
+        @media (max-width: 900px) {
+            .container {
+                padding: 20px 15px;
+            }
+            
+            header {
+                flex-direction: column;
+                gap: 16px;
+            }
+            
+            h1 {
+                font-size: 1.5rem;
+            }
+            
+            .day {
+                min-height: 80px;
+                padding: 4px;
+            }
+            
+            .day-number {
+                font-size: 0.8rem;
+            }
+            
+            .nav-arrow {
+                width: 40px;
+            }
+            
+            .nav-arrow.left {
+                left: -40px;
+            }
+            
+            .nav-arrow.right {
+                right: -40px;
+            }
+            
+            .weight-input-row {
+                grid-template-columns: 1fr 1fr;
+            }
+            
+            .weight-input-row input:first-child {
+                grid-column: span 2;
+            }
+        }
+        
+        @media (max-width: 600px) {
+            .weekday {
+                font-size: 0.7rem;
+                padding: 8px 4px;
+            }
+            
+            .day {
+                min-height: 60px;
+            }
+            
+            .schedule-item {
+                display: none;
+            }
+            
+            .day.has-schedule::after {
+                content: '';
+                position: absolute;
+                bottom: 4px;
+                left: 50%;
+                transform: translateX(-50%);
+                width: 6px;
+                height: 6px;
+                background: var(--matcha-dark);
+                border-radius: 50%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="header-left">
+                <a href="index.html" class="back-btn">
+                    <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/>
+                    </svg>
+                </a>
+                <h1><span>Calendar</span></h1>
+            </div>
+            <div class="tab-switch">
+                <button class="tab-btn active" data-view="monthly">월별</button>
+                <button class="tab-btn" data-view="daily">날짜별</button>
+            </div>
+        </header>
+        
+        <!-- Monthly View -->
+        <div class="monthly-view" id="monthlyView">
+            <div class="calendar-wrapper">
+                <div class="nav-arrow left" id="prevMonth">
+                    <div class="nav-arrow-inner">
+                        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/>
+                        </svg>
+                    </div>
+                </div>
+                
+                <div class="calendar">
+                    <div class="calendar-header">
+                        <span class="month-year" id="monthYear">2024년 12월</span>
+                    </div>
+                    <div class="weekdays">
+                        <div class="weekday">일</div>
+                        <div class="weekday">월</div>
+                        <div class="weekday">화</div>
+                        <div class="weekday">수</div>
+                        <div class="weekday">목</div>
+                        <div class="weekday">금</div>
+                        <div class="weekday">토</div>
+                    </div>
+                    <div class="days" id="calendarDays">
+                        <!-- Days will be generated by JavaScript -->
+                    </div>
+                </div>
+                
+                <div class="nav-arrow right" id="nextMonth">
+                    <div class="nav-arrow-inner">
+                        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Daily View -->
+        <div class="daily-view" id="dailyView">
+            <div class="daily-header">
+                <button class="date-nav-btn" id="prevDate">
+                    <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/>
+                    </svg>
+                </button>
+                <span class="current-date" id="currentDate">2024년 12월 19일</span>
+                <button class="date-nav-btn" id="nextDate">
+                    <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/>
+                    </svg>
+                </button>
+            </div>
+            
+            <div class="daily-content" id="dailyContent">
+                <!-- Daily content will be generated by JavaScript -->
+            </div>
+        </div>
+    </div>
+    
+    <!-- Choice Popup -->
+    <div class="choice-popup" id="choicePopup">
+        <div class="choice-popup-content">
+            <button class="choice-btn schedule" onclick="openScheduleModal()">Schedule</button>
+            <button class="choice-btn exercise" onclick="openExerciseModal()">Exercise</button>
+        </div>
+    </div>
+    
+    <!-- Context Menu -->
+    <div class="context-menu" id="contextMenu">
+        <div class="context-menu-item" onclick="editItem()">
+            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
+            </svg>
+            수정
+        </div>
+        <div class="context-menu-item delete" onclick="deleteItem()">
+            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
+            </svg>
+            삭제
+        </div>
+    </div>
+    
+    <!-- Schedule Modal -->
+    <div class="modal-overlay" id="scheduleModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 class="modal-title">Schedule 추가</h3>
+                <button class="modal-close" onclick="closeModal('scheduleModal')">
+                    <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label">내용</label>
+                    <input type="text" class="form-input" id="scheduleContent" placeholder="일정 내용을 입력하세요">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">기간 (선택)</label>
+                    <div class="date-range-selector">
+                        <input type="date" class="form-input date-input" id="scheduleStartDate">
+                        <span class="date-range-separator">~</span>
+                        <input type="date" class="form-input date-input" id="scheduleEndDate">
+                        <button type="button" class="date-clear-btn" onclick="clearDateRange()">초기화</button>
+                    </div>
+                    <p class="form-hint">기간을 설정하지 않으면 해당 날짜에만 표시됩니다.</p>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">태그 (필수)</label>
+                    <div class="tag-selector">
+                        <div class="tag-option private" data-tag="Private" onclick="selectTag(this)">Private</div>
+                        <div class="tag-option work" data-tag="Work" onclick="selectTag(this)">Work</div>
+                        <div class="tag-option birthday" data-tag="Birthday" onclick="selectTag(this)">Birthday</div>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">반복 설정 (선택)</label>
+                    <div class="repeat-selector">
+                        <div class="repeat-option" data-repeat="none" onclick="selectRepeat(this)">반복 안함</div>
+                        <div class="repeat-option" data-repeat="daily" onclick="selectRepeat(this)">매일</div>
+                        <div class="repeat-option" data-repeat="weekly" onclick="selectRepeat(this)">매주</div>
+                        <div class="repeat-option" data-repeat="yearly" onclick="selectRepeat(this)">매년</div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-cancel" onclick="closeModal('scheduleModal')">취소</button>
+                <button class="btn btn-save" onclick="saveSchedule()">저장</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Exercise Modal -->
+    <div class="modal-overlay" id="exerciseModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 class="modal-title">Exercise 기록</h3>
+                <button class="modal-close" onclick="closeModal('exerciseModal')">
+                    <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="modal-body">
+                <!-- Weight Section -->
+                <div class="exercise-section">
+                    <div class="exercise-section-header">
+                        <span class="exercise-section-title">Weight (무게 운동)</span>
+                        <button class="add-row-btn" onclick="addWeightRow()">+ 행 추가</button>
+                    </div>
+                    <div id="weightRows">
+                        <div class="weight-input-row">
+                            <input type="text" placeholder="운동 종류">
+                            <input type="number" placeholder="무게(kg)">
+                            <input type="number" placeholder="세트">
+                            <input type="number" placeholder="횟수">
+                            <button class="remove-row-btn" onclick="removeRow(this)">
+                                <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Non-weight Section -->
+                <div class="exercise-section">
+                    <div class="exercise-section-header">
+                        <span class="exercise-section-title">Non-weight (유산소/기타)</span>
+                        <button class="add-row-btn" onclick="addNonWeightRow()">+ 행 추가</button>
+                    </div>
+                    <div id="nonWeightRows">
+                        <div class="nonweight-input-row">
+                            <input type="text" placeholder="운동 종류">
+                            <input type="number" placeholder="소요 시간(분)">
+                            <button class="remove-row-btn" onclick="removeRow(this)">
+                                <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-cancel" onclick="closeModal('exerciseModal')">취소</button>
+                <button class="btn btn-save" onclick="saveExercise()">저장</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // API Base URL
+        const API_BASE = 'http://localhost:3001/api';
+        
+        // State
+        let currentYear = new Date().getFullYear();
+        let currentMonth = new Date().getMonth();
+        let selectedDate = null;
+        let selectedTag = null;
+        let selectedRepeat = 'none';
+        let currentView = 'monthly';
+        let dailyDate = new Date();
+        let calendarData = {};
+        let holidays = {};
+        
+        // Context menu state
+        let contextMenuTarget = null; // { type: 'schedule' | 'exercise', date: string, id?: string, data?: object }
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            loadHolidays(currentYear);
+            renderCalendar();
+            setupEventListeners();
+        });
+        
+        // Setup Event Listeners
+        function setupEventListeners() {
+            // Tab switching
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    currentView = btn.dataset.view;
+                    
+                    if (currentView === 'monthly') {
+                        document.getElementById('monthlyView').classList.remove('hidden');
+                        document.getElementById('dailyView').classList.remove('active');
+                    } else {
+                        document.getElementById('monthlyView').classList.add('hidden');
+                        document.getElementById('dailyView').classList.add('active');
+                        renderDailyView();
+                    }
+                });
+            });
+            
+            // Month navigation
+            document.getElementById('prevMonth').addEventListener('click', () => {
+                currentMonth--;
+                if (currentMonth < 0) {
+                    currentMonth = 11;
+                    currentYear--;
+                    loadHolidays(currentYear);
+                }
+                renderCalendar();
+            });
+            
+            document.getElementById('nextMonth').addEventListener('click', () => {
+                currentMonth++;
+                if (currentMonth > 11) {
+                    currentMonth = 0;
+                    currentYear++;
+                    loadHolidays(currentYear);
+                }
+                renderCalendar();
+            });
+            
+            // Date navigation for daily view
+            document.getElementById('prevDate').addEventListener('click', () => {
+                dailyDate.setDate(dailyDate.getDate() - 1);
+                renderDailyView();
+            });
+            
+            document.getElementById('nextDate').addEventListener('click', () => {
+                dailyDate.setDate(dailyDate.getDate() + 1);
+                renderDailyView();
+            });
+            
+            // Close choice popup and context menu when clicking outside
+            document.addEventListener('click', (e) => {
+                const popup = document.getElementById('choicePopup');
+                if (!popup.contains(e.target) && !e.target.classList.contains('day')) {
+                    popup.classList.remove('active');
+                }
+                
+                const contextMenu = document.getElementById('contextMenu');
+                if (!contextMenu.contains(e.target)) {
+                    contextMenu.classList.remove('active');
+                }
+            });
+            
+            // ESC key to close modals and context menu
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') {
+                    closeModal('scheduleModal');
+                    closeModal('exerciseModal');
+                    document.getElementById('choicePopup').classList.remove('active');
+                    document.getElementById('contextMenu').classList.remove('active');
+                }
+            });
+        }
+        
+        // Load Holidays
+        async function loadHolidays(year) {
+            try {
+                const response = await fetch(`${API_BASE}/holidays/${year}`);
+                if (response.ok) {
+                    holidays = await response.json();
+                }
+            } catch (error) {
+                console.log('Using local holidays data');
+                // Fallback to local holidays if API fails
+                holidays = getLocalHolidays(year);
+            }
+        }
+        
+        // Local holidays fallback
+        function getLocalHolidays(year) {
+            const holidayList = {
+                2024: {
+                    '2024-01-01': '신정',
+                    '2024-02-09': '설날 연휴',
+                    '2024-02-10': '설날',
+                    '2024-02-11': '설날 연휴',
+                    '2024-02-12': '대체공휴일',
+                    '2024-03-01': '삼일절',
+                    '2024-05-05': '어린이날',
+                    '2024-05-06': '대체공휴일',
+                    '2024-05-15': '부처님오신날',
+                    '2024-06-06': '현충일',
+                    '2024-08-15': '광복절',
+                    '2024-09-16': '추석 연휴',
+                    '2024-09-17': '추석',
+                    '2024-09-18': '추석 연휴',
+                    '2024-10-03': '개천절',
+                    '2024-10-09': '한글날',
+                    '2024-12-25': '크리스마스'
+                },
+                2025: {
+                    '2025-01-01': '신정',
+                    '2025-01-28': '설날 연휴',
+                    '2025-01-29': '설날',
+                    '2025-01-30': '설날 연휴',
+                    '2025-03-01': '삼일절',
+                    '2025-03-03': '대체공휴일',
+                    '2025-05-05': '어린이날',
+                    '2025-05-06': '부처님오신날',
+                    '2025-06-06': '현충일',
+                    '2025-08-15': '광복절',
+                    '2025-10-03': '개천절',
+                    '2025-10-05': '추석 연휴',
+                    '2025-10-06': '추석',
+                    '2025-10-07': '추석 연휴',
+                    '2025-10-08': '대체공휴일',
+                    '2025-10-09': '한글날',
+                    '2025-12-25': '크리스마스'
+                },
+                2026: {
+                    '2026-01-01': '신정',
+                    '2026-02-16': '설날 연휴',
+                    '2026-02-17': '설날',
+                    '2026-02-18': '설날 연휴',
+                    '2026-03-01': '삼일절',
+                    '2026-03-02': '대체공휴일',
+                    '2026-05-05': '어린이날',
+                    '2026-05-24': '부처님오신날',
+                    '2026-05-25': '대체공휴일',
+                    '2026-06-06': '현충일',
+                    '2026-08-15': '광복절',
+                    '2026-08-17': '대체공휴일',
+                    '2026-09-24': '추석 연휴',
+                    '2026-09-25': '추석',
+                    '2026-09-26': '추석 연휴',
+                    '2026-10-03': '개천절',
+                    '2026-10-05': '대체공휴일',
+                    '2026-10-09': '한글날',
+                    '2026-12-25': '크리스마스'
+                }
+            };
+            return holidayList[year] || {};
+        }
+        
+        // Multi-day schedules for the current month view
+        let multiDaySchedules = [];
+        
+        // Load Calendar Data
+        async function loadCalendarData(year, month) {
+            try {
+                const response = await fetch(`${API_BASE}/calendar/${year}/${month + 1}`);
+                if (response.ok) {
+                    calendarData = await response.json();
+                }
+                
+                // Also load all data for repeat calculation and multi-day schedules
+                const allResponse = await fetch(`${API_BASE}/calendar/all`);
+                if (allResponse.ok) {
+                    const allData = await allResponse.json();
+                    // Process repeat schedules
+                    processRepeatSchedules(allData, year, month);
+                    // Process multi-day schedules
+                    processMultiDaySchedules(allData, year, month);
+                }
+            } catch (error) {
+                console.log('Failed to load calendar data');
+            }
+        }
+        
+        // Process multi-day schedules
+        function processMultiDaySchedules(allData, targetYear, targetMonth) {
+            multiDaySchedules = [];
+            
+            Object.keys(allData).forEach(dateKey => {
+                const dateObj = allData[dateKey];
+                if (!dateObj.schedules) return;
+                
+                dateObj.schedules.forEach(schedule => {
+                    if (schedule.startDate && schedule.endDate && schedule.startDate !== schedule.endDate) {
+                        const start = new Date(schedule.startDate);
+                        const end = new Date(schedule.endDate);
+                        const monthStart = new Date(targetYear, targetMonth, 1);
+                        const monthEnd = new Date(targetYear, targetMonth + 1, 0);
+                        
+                        // Check if this multi-day schedule overlaps with current month
+                        if (start <= monthEnd && end >= monthStart) {
+                            multiDaySchedules.push({
+                                ...schedule,
+                                originalDate: dateKey
+                            });
+                        }
+                    }
+                });
+            });
+            
+            // Sort by start date, then by duration (longer first)
+            multiDaySchedules.sort((a, b) => {
+                if (a.startDate !== b.startDate) return a.startDate.localeCompare(b.startDate);
+                const durationA = new Date(a.endDate) - new Date(a.startDate);
+                const durationB = new Date(b.endDate) - new Date(b.startDate);
+                return durationB - durationA;
+            });
+        }
+        
+        // Check if a date is within a multi-day schedule
+        function getMultiDayScheduleInfo(dateStr) {
+            const results = [];
+            
+            multiDaySchedules.forEach(schedule => {
+                if (dateStr >= schedule.startDate && dateStr <= schedule.endDate) {
+                    const isStart = dateStr === schedule.startDate;
+                    const isEnd = dateStr === schedule.endDate;
+                    results.push({
+                        ...schedule,
+                        isStart,
+                        isEnd,
+                        showLabel: isStart
+                    });
+                }
+            });
+            
+            return results;
+        }
+        
+        // Process repeat schedules
+        function processRepeatSchedules(allData, targetYear, targetMonth) {
+            const daysInMonth = new Date(targetYear, targetMonth + 1, 0).getDate();
+            
+            Object.keys(allData).forEach(originalDate => {
+                const dateObj = allData[originalDate];
+                if (!dateObj.schedules) return;
+                
+                dateObj.schedules.forEach(schedule => {
+                    if (!schedule.repeat || schedule.repeat === 'none') return;
+                    
+                    const origDate = new Date(originalDate);
+                    const origYear = origDate.getFullYear();
+                    const origMonth = origDate.getMonth();
+                    const origDay = origDate.getDate();
+                    const origDayOfWeek = origDate.getDay();
+                    
+                    for (let day = 1; day <= daysInMonth; day++) {
+                        const checkDate = new Date(targetYear, targetMonth, day);
+                        const checkDateStr = formatDate(targetYear, targetMonth, day);
+                        
+                        // Skip original date
+                        if (checkDateStr === originalDate) continue;
+                        
+                        // Skip dates before original
+                        if (checkDate < origDate) continue;
+                        
+                        let shouldAdd = false;
+                        
+                        if (schedule.repeat === 'daily') {
+                            shouldAdd = true;
+                        } else if (schedule.repeat === 'weekly') {
+                            shouldAdd = checkDate.getDay() === origDayOfWeek;
+                        } else if (schedule.repeat === 'yearly') {
+                            shouldAdd = checkDate.getMonth() === origMonth && checkDate.getDate() === origDay;
+                        }
+                        
+                        if (shouldAdd) {
+                            if (!calendarData[checkDateStr]) {
+                                calendarData[checkDateStr] = { schedules: [], exercise: null };
+                            }
+                            if (!calendarData[checkDateStr].schedules) {
+                                calendarData[checkDateStr].schedules = [];
+                            }
+                            
+                            // Check if already added (avoid duplicates)
+                            const exists = calendarData[checkDateStr].schedules.some(
+                                s => s.id === schedule.id || (s.repeatFrom === schedule.id)
+                            );
+                            
+                            if (!exists) {
+                                calendarData[checkDateStr].schedules.push({
+                                    ...schedule,
+                                    isRepeat: true,
+                                    repeatFrom: schedule.id,
+                                    originalDate: originalDate
+                                });
+                            }
+                        }
+                    }
+                });
+            });
+        }
+        
+        // Render Calendar
+        async function renderCalendar() {
+            await loadCalendarData(currentYear, currentMonth);
+            
+            const monthYearEl = document.getElementById('monthYear');
+            monthYearEl.textContent = `${currentYear}년 ${currentMonth + 1}월`;
+            
+            const daysEl = document.getElementById('calendarDays');
+            daysEl.innerHTML = '';
+            
+            const firstDay = new Date(currentYear, currentMonth, 1);
+            const lastDay = new Date(currentYear, currentMonth + 1, 0);
+            const startDayOfWeek = firstDay.getDay();
+            const daysInMonth = lastDay.getDate();
+            
+            // Previous month days
+            const prevMonthLastDay = new Date(currentYear, currentMonth, 0).getDate();
+            for (let i = startDayOfWeek - 1; i >= 0; i--) {
+                const day = prevMonthLastDay - i;
+                const dayEl = createDayElement(day, true);
+                daysEl.appendChild(dayEl);
+            }
+            
+            // Current month days
+            const today = new Date();
+            for (let day = 1; day <= daysInMonth; day++) {
+                const dateStr = formatDate(currentYear, currentMonth, day);
+                const isToday = today.getFullYear() === currentYear && 
+                               today.getMonth() === currentMonth && 
+                               today.getDate() === day;
+                const isHoliday = holidays[dateStr];
+                const dayData = calendarData[dateStr];
+                
+                const dayEl = createDayElement(day, false, isToday, isHoliday, dayData, dateStr);
+                daysEl.appendChild(dayEl);
+            }
+            
+            // Next month days
+            const totalCells = daysEl.children.length;
+            const remainingCells = 42 - totalCells; // 6 rows * 7 days
+            for (let i = 1; i <= remainingCells; i++) {
+                const dayEl = createDayElement(i, true);
+                daysEl.appendChild(dayEl);
+            }
+        }
+        
+        // Create Day Element
+        function createDayElement(day, isOtherMonth, isToday = false, holidayName = null, dayData = null, dateStr = null) {
+            const dayEl = document.createElement('div');
+            dayEl.className = 'day';
+            if (isOtherMonth) dayEl.classList.add('other-month');
+            if (isToday) dayEl.classList.add('today');
+            if (holidayName) dayEl.classList.add('holiday');
+            
+            let contentHtml = `<div class="day-number">${day}</div>`;
+            
+            if (!isOtherMonth) {
+                contentHtml += '<div class="day-content">';
+                
+                // Multi-day schedules first (at the very top)
+                const multiDayInfo = getMultiDayScheduleInfo(dateStr);
+                multiDayInfo.forEach((schedule, idx) => {
+                    let barClass = 'schedule-bar ' + schedule.tag.toLowerCase();
+                    if (schedule.isStart && schedule.isEnd) {
+                        barClass += ' single';
+                    } else if (schedule.isStart) {
+                        barClass += ' start';
+                    } else if (schedule.isEnd) {
+                        barClass += ' end';
+                    }
+                    
+                    const label = schedule.showLabel ? schedule.content : '';
+                    contentHtml += `<div class="${barClass}" data-multiday-idx="${idx}">${label}</div>`;
+                });
+                
+                // Holiday name (after multi-day schedules)
+                if (holidayName) {
+                    contentHtml += `<div class="holiday-name">${holidayName}</div>`;
+                }
+                
+                // Regular schedules (excluding multi-day ones)
+                if (dayData && dayData.schedules) {
+                    const regularSchedules = dayData.schedules.filter(s => 
+                        (s.source === 'monthly' || s.isRepeat) && 
+                        !(s.startDate && s.endDate && s.startDate !== s.endDate)
+                    );
+                    
+                    const maxToShow = Math.max(0, 2 - multiDayInfo.length);
+                    regularSchedules.slice(0, maxToShow).forEach((schedule, idx) => {
+                        const repeatIcon = schedule.repeat && schedule.repeat !== 'none' ? '🔄' : (schedule.isRepeat ? '🔄' : '');
+                        contentHtml += `<div class="schedule-item ${schedule.tag.toLowerCase()}" data-schedule-idx="${idx}">${repeatIcon}${schedule.content}</div>`;
+                    });
+                    
+                    const totalSchedules = regularSchedules.length + multiDayInfo.length;
+                    if (totalSchedules > 2) {
+                        contentHtml += `<div class="schedule-item" style="background: var(--text-muted);">+${totalSchedules - 2} more</div>`;
+                    }
+                    if (regularSchedules.length > 0 || multiDayInfo.length > 0) {
+                        dayEl.classList.add('has-schedule');
+                    }
+                    
+                    // Store schedules data for context menu
+                    const allSchedules = [...multiDayInfo, ...regularSchedules];
+                    dayEl.dataset.schedules = JSON.stringify(allSchedules);
+                } else if (multiDayInfo.length > 0) {
+                    dayEl.classList.add('has-schedule');
+                    dayEl.dataset.schedules = JSON.stringify(multiDayInfo);
+                }
+                
+                // Exercise summary (only from monthly source)
+                if (dayData && dayData.exercise && dayData.exercise.source === 'monthly') {
+                    const totalWeight = calculateTotalWeight(dayData.exercise.weight || []);
+                    const hasWeight = totalWeight > 0;
+                    const hasNonWeight = dayData.exercise.nonWeight && dayData.exercise.nonWeight.length > 0;
+                    
+                    if (hasWeight || hasNonWeight) {
+                        let summaryHtml = '<div class="exercise-summary" data-has-exercise="true">';
+                        
+                        if (hasWeight) {
+                            summaryHtml += `총 무게: ${totalWeight.toLocaleString()}kg`;
+                        }
+                        
+                        if (hasNonWeight) {
+                            const nonWeightSummary = dayData.exercise.nonWeight
+                                .map(ex => `${ex.type} ${ex.duration}분`)
+                                .join(', ');
+                            if (hasWeight) summaryHtml += '<br>';
+                            summaryHtml += `${nonWeightSummary}`;
+                        }
+                        
+                        summaryHtml += '</div>';
+                        contentHtml += summaryHtml;
+                    }
+                    dayEl.dataset.exercise = JSON.stringify(dayData.exercise);
+                }
+                
+                contentHtml += '</div>';
+                
+                dayEl.innerHTML = contentHtml;
+                dayEl.addEventListener('click', (e) => showChoicePopup(e, dateStr));
+                
+                // Add context menu for schedule items
+                dayEl.querySelectorAll('.schedule-item[data-schedule-idx]').forEach(item => {
+                    item.addEventListener('contextmenu', (e) => {
+                        const schedules = JSON.parse(dayEl.dataset.schedules || '[]');
+                        const idx = parseInt(item.dataset.scheduleIdx);
+                        const schedule = schedules[idx];
+                        if (schedule) {
+                            showContextMenu(e, 'schedule', dateStr, schedule.id, schedule);
+                        }
+                    });
+                });
+                
+                // Add context menu for exercise summary
+                const exerciseSummary = dayEl.querySelector('.exercise-summary[data-has-exercise]');
+                if (exerciseSummary && dayEl.dataset.exercise) {
+                    exerciseSummary.addEventListener('contextmenu', (e) => {
+                        const exercise = JSON.parse(dayEl.dataset.exercise);
+                        showContextMenu(e, 'exercise', dateStr, null, exercise);
+                    });
+                }
+            } else {
+                dayEl.innerHTML = contentHtml;
+            }
+            
+            return dayEl;
+        }
+        
+        // Format date string
+        function formatDate(year, month, day) {
+            return `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+        }
+        
+        // Calculate total weight
+        function calculateTotalWeight(weightExercises) {
+            return weightExercises.reduce((sum, ex) => {
+                return sum + (ex.kg * ex.sets * ex.reps);
+            }, 0);
+        }
+        
+        // Get repeat label
+        function getRepeatLabel(repeat) {
+            switch (repeat) {
+                case 'daily': return '매일';
+                case 'weekly': return '매주';
+                case 'yearly': return '매년';
+                default: return '';
+            }
+        }
+        
+        // Save Memo
+        async function saveMemo() {
+            const textarea = document.getElementById('memoTextarea');
+            const statusEl = document.getElementById('memoStatus');
+            const memo = textarea.value;
+            
+            try {
+                const response = await fetch(`${API_BASE}/calendar/${selectedDate}/memo`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ memo })
+                });
+                
+                if (response.ok) {
+                    statusEl.textContent = '✓ 저장됨';
+                    statusEl.classList.add('saved');
+                    setTimeout(() => {
+                        statusEl.textContent = '';
+                        statusEl.classList.remove('saved');
+                    }, 2000);
+                } else {
+                    statusEl.textContent = '저장 실패';
+                }
+            } catch (error) {
+                console.error('Error saving memo:', error);
+                statusEl.textContent = '서버 연결 실패';
+            }
+        }
+        
+        // Show context menu
+        function showContextMenu(e, type, date, id, data) {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            contextMenuTarget = { type, date, id, data };
+            
+            const menu = document.getElementById('contextMenu');
+            menu.style.left = `${e.clientX}px`;
+            menu.style.top = `${e.clientY}px`;
+            menu.classList.add('active');
+            
+            // Adjust position if menu goes off screen
+            const rect = menu.getBoundingClientRect();
+            if (rect.right > window.innerWidth) {
+                menu.style.left = `${window.innerWidth - rect.width - 10}px`;
+            }
+            if (rect.bottom > window.innerHeight) {
+                menu.style.top = `${window.innerHeight - rect.height - 10}px`;
+            }
+        }
+        
+        // Edit item
+        function editItem() {
+            document.getElementById('contextMenu').classList.remove('active');
+            
+            if (!contextMenuTarget) return;
+            
+            selectedDate = contextMenuTarget.date;
+            
+            if (contextMenuTarget.type === 'schedule') {
+                openScheduleModalForEdit(contextMenuTarget.data);
+            } else if (contextMenuTarget.type === 'exercise') {
+                openExerciseModalForEdit(contextMenuTarget.data);
+            }
+        }
+        
+        // Delete item
+        async function deleteItem() {
+            document.getElementById('contextMenu').classList.remove('active');
+            
+            if (!contextMenuTarget) return;
+            
+            const confirmMsg = contextMenuTarget.type === 'schedule' 
+                ? '이 일정을 삭제하시겠습니까?' 
+                : '이 운동 기록을 삭제하시겠습니까?';
+            
+            if (!confirm(confirmMsg)) return;
+            
+            try {
+                let url;
+                if (contextMenuTarget.type === 'schedule') {
+                    // If it's a repeat instance, delete from original date
+                    const deleteDate = contextMenuTarget.data.originalDate || contextMenuTarget.date;
+                    const deleteId = contextMenuTarget.data.repeatFrom || contextMenuTarget.id;
+                    url = `${API_BASE}/calendar/${deleteDate}/schedule/${deleteId}`;
+                } else {
+                    url = `${API_BASE}/calendar/${contextMenuTarget.date}/exercise`;
+                }
+                
+                const response = await fetch(url, { method: 'DELETE' });
+                
+                if (response.ok) {
+                    if (currentView === 'monthly') {
+                        renderCalendar();
+                    } else {
+                        renderDailyView();
+                    }
+                } else {
+                    alert('삭제에 실패했습니다.');
+                }
+            } catch (error) {
+                console.error('Error deleting item:', error);
+                alert('서버 연결에 실패했습니다.');
+            }
+        }
+        
+        // Open Schedule Modal for Edit
+        function openScheduleModalForEdit(schedule) {
+            document.getElementById('scheduleModal').classList.add('active');
+            document.getElementById('scheduleContent').value = schedule.content;
+            
+            // Select tag
+            document.querySelectorAll('.tag-option').forEach(opt => {
+                opt.classList.remove('selected');
+                if (opt.dataset.tag === schedule.tag) {
+                    opt.classList.add('selected');
+                }
+            });
+            selectedTag = schedule.tag;
+            
+            // Select repeat
+            document.querySelectorAll('.repeat-option').forEach(opt => {
+                opt.classList.remove('selected');
+                if (opt.dataset.repeat === (schedule.repeat || 'none')) {
+                    opt.classList.add('selected');
+                }
+            });
+            selectedRepeat = schedule.repeat || 'none';
+            
+            // Set date range
+            const editDate = schedule.originalDate || selectedDate;
+            document.getElementById('scheduleStartDate').value = schedule.startDate || editDate;
+            document.getElementById('scheduleEndDate').value = schedule.endDate || editDate;
+            
+            // Mark as editing
+            document.getElementById('scheduleModal').dataset.editId = schedule.repeatFrom || schedule.id;
+            document.getElementById('scheduleModal').dataset.editDate = editDate;
+            
+            document.body.style.overflow = 'hidden';
+        }
+        
+        // Open Exercise Modal for Edit
+        function openExerciseModalForEdit(exercise) {
+            document.getElementById('exerciseModal').classList.add('active');
+            
+            // Populate weight rows
+            const weightContainer = document.getElementById('weightRows');
+            weightContainer.innerHTML = '';
+            
+            if (exercise.weight && exercise.weight.length > 0) {
+                exercise.weight.forEach(ex => {
+                    const row = document.createElement('div');
+                    row.className = 'weight-input-row';
+                    row.innerHTML = `
+                        <input type="text" placeholder="운동 종류" value="${ex.type}">
+                        <input type="number" placeholder="무게(kg)" value="${ex.kg}">
+                        <input type="number" placeholder="세트" value="${ex.sets}">
+                        <input type="number" placeholder="횟수" value="${ex.reps}">
+                        <button class="remove-row-btn" onclick="removeRow(this)">
+                            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+                            </svg>
+                        </button>
+                    `;
+                    weightContainer.appendChild(row);
+                });
+            } else {
+                addWeightRow();
+            }
+            
+            // Populate non-weight rows
+            const nonWeightContainer = document.getElementById('nonWeightRows');
+            nonWeightContainer.innerHTML = '';
+            
+            if (exercise.nonWeight && exercise.nonWeight.length > 0) {
+                exercise.nonWeight.forEach(ex => {
+                    const row = document.createElement('div');
+                    row.className = 'nonweight-input-row';
+                    row.innerHTML = `
+                        <input type="text" placeholder="운동 종류" value="${ex.type}">
+                        <input type="number" placeholder="소요 시간(분)" value="${ex.duration}">
+                        <button class="remove-row-btn" onclick="removeRow(this)">
+                            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+                            </svg>
+                        </button>
+                    `;
+                    nonWeightContainer.appendChild(row);
+                });
+            } else {
+                addNonWeightRow();
+            }
+            
+            // Mark as editing
+            document.getElementById('exerciseModal').dataset.editing = 'true';
+            
+            document.body.style.overflow = 'hidden';
+        }
+        
+        // Show Choice Popup
+        function showChoicePopup(event, dateStr) {
+            selectedDate = dateStr;
+            const popup = document.getElementById('choicePopup');
+            const rect = event.target.getBoundingClientRect();
+            
+            popup.style.left = `${rect.left + rect.width / 2}px`;
+            popup.style.top = `${rect.bottom + 10}px`;
+            popup.style.transform = 'translateX(-50%)';
+            popup.classList.add('active');
+            
+            event.stopPropagation();
+        }
+        
+        // Tag Selection
+        function selectTag(element) {
+            document.querySelectorAll('.tag-option').forEach(opt => opt.classList.remove('selected'));
+            element.classList.add('selected');
+            selectedTag = element.dataset.tag;
+        }
+        
+        // Repeat Selection
+        function selectRepeat(element) {
+            document.querySelectorAll('.repeat-option').forEach(opt => opt.classList.remove('selected'));
+            element.classList.add('selected');
+            selectedRepeat = element.dataset.repeat;
+        }
+        
+        // Open Schedule Modal
+        function openScheduleModal() {
+            document.getElementById('choicePopup').classList.remove('active');
+            document.getElementById('scheduleModal').classList.add('active');
+            document.getElementById('scheduleContent').value = '';
+            document.querySelectorAll('.tag-option').forEach(opt => opt.classList.remove('selected'));
+            document.querySelectorAll('.repeat-option').forEach(opt => opt.classList.remove('selected'));
+            document.querySelector('.repeat-option[data-repeat="none"]').classList.add('selected');
+            selectedTag = null;
+            selectedRepeat = 'none';
+            
+            // Set default date range
+            document.getElementById('scheduleStartDate').value = selectedDate;
+            document.getElementById('scheduleEndDate').value = selectedDate;
+            
+            document.body.style.overflow = 'hidden';
+        }
+        
+        // Clear date range
+        function clearDateRange() {
+            document.getElementById('scheduleStartDate').value = selectedDate;
+            document.getElementById('scheduleEndDate').value = selectedDate;
+        }
+        
+        // Open Exercise Modal
+        function openExerciseModal() {
+            document.getElementById('choicePopup').classList.remove('active');
+            document.getElementById('exerciseModal').classList.add('active');
+            resetExerciseForm();
+            document.body.style.overflow = 'hidden';
+        }
+        
+        // Close Modal
+        function closeModal(modalId) {
+            const modal = document.getElementById(modalId);
+            modal.classList.remove('active');
+            document.body.style.overflow = '';
+            
+            // Clear edit state
+            if (modalId === 'scheduleModal') {
+                delete modal.dataset.editId;
+                delete modal.dataset.editDate;
+            } else if (modalId === 'exerciseModal') {
+                delete modal.dataset.editing;
+            }
+        }
+        
+        // Add Weight Row
+        function addWeightRow() {
+            const container = document.getElementById('weightRows');
+            const row = document.createElement('div');
+            row.className = 'weight-input-row';
+            row.innerHTML = `
+                <input type="text" placeholder="운동 종류">
+                <input type="number" placeholder="무게(kg)">
+                <input type="number" placeholder="세트">
+                <input type="number" placeholder="횟수">
+                <button class="remove-row-btn" onclick="removeRow(this)">
+                    <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+                    </svg>
+                </button>
+            `;
+            container.appendChild(row);
+        }
+        
+        // Add Non-Weight Row
+        function addNonWeightRow() {
+            const container = document.getElementById('nonWeightRows');
+            const row = document.createElement('div');
+            row.className = 'nonweight-input-row';
+            row.innerHTML = `
+                <input type="text" placeholder="운동 종류">
+                <input type="number" placeholder="소요 시간(분)">
+                <button class="remove-row-btn" onclick="removeRow(this)">
+                    <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+                    </svg>
+                </button>
+            `;
+            container.appendChild(row);
+        }
+        
+        // Remove Row
+        function removeRow(button) {
+            const row = button.parentElement;
+            const container = row.parentElement;
+            if (container.children.length > 1) {
+                row.remove();
+            } else {
+                // Clear inputs instead of removing last row
+                row.querySelectorAll('input').forEach(input => input.value = '');
+            }
+        }
+        
+        // Reset Exercise Form
+        function resetExerciseForm() {
+            const weightContainer = document.getElementById('weightRows');
+            const nonWeightContainer = document.getElementById('nonWeightRows');
+            
+            weightContainer.innerHTML = `
+                <div class="weight-input-row">
+                    <input type="text" placeholder="운동 종류">
+                    <input type="number" placeholder="무게(kg)">
+                    <input type="number" placeholder="세트">
+                    <input type="number" placeholder="횟수">
+                    <button class="remove-row-btn" onclick="removeRow(this)">
+                        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+                        </svg>
+                    </button>
+                </div>
+            `;
+            
+            nonWeightContainer.innerHTML = `
+                <div class="nonweight-input-row">
+                    <input type="text" placeholder="운동 종류">
+                    <input type="number" placeholder="소요 시간(분)">
+                    <button class="remove-row-btn" onclick="removeRow(this)">
+                        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+                        </svg>
+                    </button>
+                </div>
+            `;
+        }
+        
+        // Save Schedule
+        async function saveSchedule() {
+            const content = document.getElementById('scheduleContent').value.trim();
+            const modal = document.getElementById('scheduleModal');
+            const editId = modal.dataset.editId;
+            const editDate = modal.dataset.editDate;
+            
+            const startDate = document.getElementById('scheduleStartDate').value;
+            const endDate = document.getElementById('scheduleEndDate').value;
+            
+            if (!content) {
+                alert('내용을 입력해주세요.');
+                return;
+            }
+            
+            if (!selectedTag) {
+                alert('태그를 선택해주세요.');
+                return;
+            }
+            
+            if (startDate && endDate && startDate > endDate) {
+                alert('종료일이 시작일보다 앞설 수 없습니다.');
+                return;
+            }
+            
+            const source = currentView === 'monthly' ? 'monthly' : 'daily';
+            
+            // Determine if it's a multi-day schedule
+            const isMultiDay = startDate && endDate && startDate !== endDate;
+            
+            try {
+                let response;
+                
+                if (editId) {
+                    // Update existing schedule
+                    response = await fetch(`${API_BASE}/calendar/${editDate}/schedule/${editId}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            content,
+                            tag: selectedTag,
+                            repeat: selectedRepeat,
+                            startDate: isMultiDay ? startDate : null,
+                            endDate: isMultiDay ? endDate : null
+                        })
+                    });
+                } else {
+                    // Create new schedule - save to start date
+                    const saveDate = startDate || selectedDate;
+                    response = await fetch(`${API_BASE}/calendar/${saveDate}/schedule`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            content,
+                            tag: selectedTag,
+                            source,
+                            repeat: selectedRepeat,
+                            startDate: isMultiDay ? startDate : null,
+                            endDate: isMultiDay ? endDate : null
+                        })
+                    });
+                }
+                
+                if (response.ok) {
+                    closeModal('scheduleModal');
+                    // Clear edit state
+                    delete modal.dataset.editId;
+                    delete modal.dataset.editDate;
+                    
+                    if (currentView === 'monthly') {
+                        renderCalendar();
+                    } else {
+                        renderDailyView();
+                    }
+                } else {
+                    alert('저장에 실패했습니다.');
+                }
+            } catch (error) {
+                console.error('Error saving schedule:', error);
+                alert('서버 연결에 실패했습니다.');
+            }
+        }
+        
+        // Save Exercise
+        async function saveExercise() {
+            const weightRows = document.querySelectorAll('#weightRows .weight-input-row');
+            const nonWeightRows = document.querySelectorAll('#nonWeightRows .nonweight-input-row');
+            
+            const weight = [];
+            weightRows.forEach(row => {
+                const inputs = row.querySelectorAll('input');
+                const type = inputs[0].value.trim();
+                const kg = parseFloat(inputs[1].value) || 0;
+                const sets = parseInt(inputs[2].value) || 0;
+                const reps = parseInt(inputs[3].value) || 0;
+                
+                if (type && kg > 0 && sets > 0 && reps > 0) {
+                    weight.push({ type, kg, sets, reps });
+                }
+            });
+            
+            const nonWeight = [];
+            nonWeightRows.forEach(row => {
+                const inputs = row.querySelectorAll('input');
+                const type = inputs[0].value.trim();
+                const duration = parseInt(inputs[1].value) || 0;
+                
+                if (type && duration > 0) {
+                    nonWeight.push({ type, duration });
+                }
+            });
+            
+            if (weight.length === 0 && nonWeight.length === 0) {
+                alert('최소 하나의 운동을 입력해주세요.');
+                return;
+            }
+            
+            const source = currentView === 'monthly' ? 'monthly' : 'daily';
+            
+            try {
+                const response = await fetch(`${API_BASE}/calendar/${selectedDate}/exercise`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        weight,
+                        nonWeight,
+                        source
+                    })
+                });
+                
+                if (response.ok) {
+                    closeModal('exerciseModal');
+                    // Clear edit state
+                    delete document.getElementById('exerciseModal').dataset.editing;
+                    
+                    if (currentView === 'monthly') {
+                        renderCalendar();
+                    } else {
+                        renderDailyView();
+                    }
+                } else {
+                    alert('저장에 실패했습니다.');
+                }
+            } catch (error) {
+                console.error('Error saving exercise:', error);
+                alert('서버 연결에 실패했습니다.');
+            }
+        }
+        
+        // Render Daily View
+        async function renderDailyView() {
+            const dateStr = formatDate(dailyDate.getFullYear(), dailyDate.getMonth(), dailyDate.getDate());
+            selectedDate = dateStr;
+            
+            // Update header
+            const days = ['일', '월', '화', '수', '목', '금', '토'];
+            const dayName = days[dailyDate.getDay()];
+            document.getElementById('currentDate').textContent = 
+                `${dailyDate.getFullYear()}년 ${dailyDate.getMonth() + 1}월 ${dailyDate.getDate()}일 (${dayName})`;
+            
+            // Load data for this date
+            try {
+                const response = await fetch(`${API_BASE}/calendar/${dateStr}`);
+                let data = response.ok ? await response.json() : {};
+                
+                // Also process repeat schedules for daily view
+                const allResponse = await fetch(`${API_BASE}/calendar/all`);
+                if (allResponse.ok) {
+                    const allData = await allResponse.json();
+                    data = processRepeatForDate(allData, data, dateStr);
+                }
+                
+                renderDailyContent(data, dateStr);
+            } catch (error) {
+                console.log('Failed to load daily data');
+                renderDailyContent({}, dateStr);
+            }
+        }
+        
+        // Process repeat schedules for a specific date
+        function processRepeatForDate(allData, currentData, targetDateStr) {
+            const targetDate = new Date(targetDateStr);
+            
+            Object.keys(allData).forEach(originalDate => {
+                const dateObj = allData[originalDate];
+                if (!dateObj.schedules) return;
+                
+                dateObj.schedules.forEach(schedule => {
+                    if (!schedule.repeat || schedule.repeat === 'none') return;
+                    if (originalDate === targetDateStr) return;
+                    
+                    const origDate = new Date(originalDate);
+                    if (targetDate < origDate) return;
+                    
+                    let shouldAdd = false;
+                    
+                    if (schedule.repeat === 'daily') {
+                        shouldAdd = true;
+                    } else if (schedule.repeat === 'weekly') {
+                        shouldAdd = targetDate.getDay() === origDate.getDay();
+                    } else if (schedule.repeat === 'yearly') {
+                        shouldAdd = targetDate.getMonth() === origDate.getMonth() && 
+                                   targetDate.getDate() === origDate.getDate();
+                    }
+                    
+                    if (shouldAdd) {
+                        if (!currentData.schedules) {
+                            currentData.schedules = [];
+                        }
+                        
+                        const exists = currentData.schedules.some(
+                            s => s.id === schedule.id || s.repeatFrom === schedule.id
+                        );
+                        
+                        if (!exists) {
+                            currentData.schedules.push({
+                                ...schedule,
+                                isRepeat: true,
+                                repeatFrom: schedule.id,
+                                originalDate: originalDate
+                            });
+                        }
+                    }
+                });
+            });
+            
+            return currentData;
+        }
+        
+        // Render Daily Content
+        function renderDailyContent(data, dateStr) {
+            const container = document.getElementById('dailyContent');
+            const holidayName = holidays[dateStr];
+            
+            let html = '';
+            
+            // Holiday notice
+            if (holidayName) {
+                html += `
+                    <div class="daily-section">
+                        <div style="background: var(--strawberry-light); padding: 12px 16px; border-radius: 12px; color: var(--holiday-color); font-weight: 600;">
+                            🎉 ${holidayName}
+                        </div>
+                    </div>
+                `;
+            }
+            
+            // Schedules section
+            html += `
+                <div class="daily-section">
+                    <div class="section-title">
+                        <div class="section-title-icon schedule">
+                            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM9 10H7v2h2v-2zm4 0h-2v2h2v-2zm4 0h-2v2h2v-2z"/>
+                            </svg>
+                        </div>
+                        Schedule
+                    </div>
+                    <div class="schedule-list">
+            `;
+            
+            if (data.schedules && data.schedules.length > 0) {
+                data.schedules.forEach((schedule, idx) => {
+                    const repeatLabel = getRepeatLabel(schedule.repeat);
+                    const isRepeatInstance = schedule.isRepeat;
+                    html += `
+                        <div class="schedule-list-item" data-schedule-idx="${idx}">
+                            <span class="tag-badge ${schedule.tag.toLowerCase()}">${schedule.tag}</span>
+                            <span class="schedule-content">${schedule.content}</span>
+                            ${repeatLabel ? `<span class="repeat-badge">${repeatLabel}</span>` : ''}
+                            ${isRepeatInstance ? '<span class="repeat-badge">반복</span>' : ''}
+                            ${schedule.source === 'daily' ? '<span style="font-size: 0.7rem; color: var(--text-muted);">(날짜별)</span>' : ''}
+                        </div>
+                    `;
+                });
+                // Store schedules data
+                html = html.replace('<div class="schedule-list">', `<div class="schedule-list" data-schedules='${JSON.stringify(data.schedules).replace(/'/g, "&apos;")}'>`);
+            } else {
+                html += `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">
+                            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11z"/>
+                            </svg>
+                        </div>
+                        <p>등록된 일정이 없습니다.</p>
+                    </div>
+                `;
+            }
+            
+            html += `</div></div>`;
+            
+            // Exercise section
+            html += `
+                <div class="daily-section">
+                    <div class="section-title">
+                        <div class="section-title-icon exercise">
+                            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M20.57 14.86L22 13.43 20.57 12 17 15.57 8.43 7 12 3.43 10.57 2 9.14 3.43 7.71 2 5.57 4.14 4.14 2.71 2.71 4.14l1.43 1.43L2 7.71l1.43 1.43L2 10.57 3.43 12 7 8.43 15.57 17 12 20.57 13.43 22l1.43-1.43L16.29 22l2.14-2.14 1.43 1.43 1.43-1.43-1.43-1.43L22 16.29z"/>
+                            </svg>
+                        </div>
+                        Exercise
+                    </div>
+                    <div class="exercise-card">
+            `;
+            
+            const hasExercise = data.exercise && (data.exercise.weight?.length > 0 || data.exercise.nonWeight?.length > 0);
+            if (hasExercise) {
+                // Store exercise data for context menu
+                html = html.replace('<div class="exercise-card">', `<div class="exercise-card" data-exercise='${JSON.stringify(data.exercise).replace(/'/g, "&apos;")}'>`);
+                
+                // Weight exercises
+                if (data.exercise.weight && data.exercise.weight.length > 0) {
+                    html += `
+                        <div class="exercise-subsection">
+                            <div class="exercise-subsection-title">Weight (무게 운동)</div>
+                            <table class="weight-table">
+                                <thead>
+                                    <tr>
+                                        <th>운동</th>
+                                        <th>무게</th>
+                                        <th>세트</th>
+                                        <th>횟수</th>
+                                        <th>볼륨</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                    `;
+                    
+                    data.exercise.weight.forEach(ex => {
+                        const volume = ex.kg * ex.sets * ex.reps;
+                        html += `
+                            <tr>
+                                <td>${ex.type}</td>
+                                <td>${ex.kg}kg</td>
+                                <td>${ex.sets}세트</td>
+                                <td>${ex.reps}회</td>
+                                <td>${volume.toLocaleString()}kg</td>
+                            </tr>
+                        `;
+                    });
+                    
+                    html += `
+                                </tbody>
+                            </table>
+                            <div class="total-weight">
+                                <span>오늘 다룬 총 무게</span>
+                                <span class="total-weight-value">${calculateTotalWeight(data.exercise.weight).toLocaleString()}kg</span>
+                            </div>
+                        </div>
+                    `;
+                }
+                
+                // Non-weight exercises
+                if (data.exercise.nonWeight && data.exercise.nonWeight.length > 0) {
+                    html += `
+                        <div class="exercise-subsection">
+                            <div class="exercise-subsection-title">Non-weight (유산소/기타)</div>
+                            <div class="nonweight-list">
+                    `;
+                    
+                    data.exercise.nonWeight.forEach(ex => {
+                        html += `
+                            <div class="nonweight-item">
+                                <span>${ex.type}</span>
+                                <span>${ex.duration}분</span>
+                            </div>
+                        `;
+                    });
+                    
+                    html += `</div></div>`;
+                }
+            } else {
+                html += `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">
+                            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M20.57 14.86L22 13.43 20.57 12 17 15.57 8.43 7 12 3.43 10.57 2 9.14 3.43 7.71 2 5.57 4.14 4.14 2.71 2.71 4.14l1.43 1.43L2 7.71l1.43 1.43L2 10.57 3.43 12 7 8.43 15.57 17 12 20.57 13.43 22l1.43-1.43L16.29 22l2.14-2.14 1.43 1.43 1.43-1.43-1.43-1.43L22 16.29z"/>
+                            </svg>
+                        </div>
+                        <p>등록된 운동 기록이 없습니다.</p>
+                    </div>
+                `;
+            }
+            
+            html += `</div></div>`;
+            
+            // Add buttons for daily view
+            html += `
+                <div style="display: flex; gap: 12px; margin-top: 24px;">
+                    <button class="btn btn-save" style="flex: 1;" onclick="openScheduleModal()">+ Schedule 추가</button>
+                    <button class="btn" style="flex: 1; background: linear-gradient(135deg, var(--strawberry), var(--strawberry-light)); color: var(--text-primary);" onclick="openExerciseModal()">+ Exercise 추가</button>
+                </div>
+            `;
+            
+            // Memo section
+            const memoContent = data.memo || '';
+            html += `
+                <div class="daily-section memo-section">
+                    <div class="section-title">
+                        <div class="section-title-icon memo">
+                            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
+                            </svg>
+                        </div>
+                        Memo
+                    </div>
+                    <div class="memo-card">
+                        <textarea class="memo-textarea" id="memoTextarea" placeholder="오늘의 메모나 일기를 남겨보세요...">${memoContent}</textarea>
+                        <div class="memo-footer">
+                            <span class="memo-status" id="memoStatus"></span>
+                            <button class="memo-save-btn" onclick="saveMemo()">저장</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            container.innerHTML = html;
+            
+            // Add context menu event listeners for daily view
+            const scheduleList = container.querySelector('.schedule-list[data-schedules]');
+            if (scheduleList) {
+                const schedules = JSON.parse(scheduleList.dataset.schedules.replace(/&apos;/g, "'"));
+                scheduleList.querySelectorAll('.schedule-list-item[data-schedule-idx]').forEach(item => {
+                    item.addEventListener('contextmenu', (e) => {
+                        const idx = parseInt(item.dataset.scheduleIdx);
+                        const schedule = schedules[idx];
+                        if (schedule) {
+                            showContextMenu(e, 'schedule', dateStr, schedule.id, schedule);
+                        }
+                    });
+                });
+            }
+            
+            const exerciseCard = container.querySelector('.exercise-card[data-exercise]');
+            if (exerciseCard) {
+                exerciseCard.addEventListener('contextmenu', (e) => {
+                    const exercise = JSON.parse(exerciseCard.dataset.exercise.replace(/&apos;/g, "'"));
+                    showContextMenu(e, 'exercise', dateStr, null, exercise);
+                });
+            }
+        }
+    </script>
+</body>
+</html>

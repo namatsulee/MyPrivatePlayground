@@ -596,8 +596,7 @@
             <!-- 1st Depth: 6 Main Categories -->
             <div class="category-grid">
                 <!-- Calendar -->
-                <div class="category-card calendar disabled" data-category="calendar">
-                    <span class="category-badge">Coming Soon</span>
+                <a href="calendar.html" class="category-card calendar" data-category="calendar" style="text-decoration: none;">
                     <div class="category-icon">
                         <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                             <path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM9 10H7v2h2v-2zm4 0h-2v2h2v-2zm4 0h-2v2h2v-2zm-8 4H7v2h2v-2zm4 0h-2v2h2v-2zm4 0h-2v2h2v-2z"/>
@@ -605,7 +604,12 @@
                     </div>
                     <h2 class="category-title">Calendar</h2>
                     <p class="category-desc">Schedule & event management</p>
-                </div>
+                    <div class="category-arrow">
+                        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M12 8l-6 6 1.41 1.41L12 10.83l4.59 4.58L18 14z"/>
+                        </svg>
+                    </div>
+                </a>
                 
                 <!-- Working Tools -->
                 <div class="category-card tools" data-category="tools" onclick="openModal('tools')">
