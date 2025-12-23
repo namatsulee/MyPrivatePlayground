@@ -1762,25 +1762,69 @@
         let multiDaySchedules = [];
         
         // Load Calendar Data
+        // Cache keys
+        const CACHE_KEY = 'calendarDataCache';
+        const CACHE_TIME_KEY = 'calendarCacheTime';
+        const CACHE_DURATION = 5 * 60 * 1000; // 5분 캐시
+        
+        // Load from cache first, then update from server
         async function loadCalendarData(year, month) {
+            // 1. 로컬 캐시에서 먼저 로드 (즉시 표시)
+            const cached = localStorage.getItem(CACHE_KEY);
+            if (cached) {
+                try {
+                    const allData = JSON.parse(cached);
+                    applyCalendarData(allData, year, month);
+                } catch (e) {}
+            }
+            
+            // 2. 백그라운드에서 서버 데이터 가져오기
             try {
-                const response = await fetch(`${API_BASE}/calendar/${year}/${month + 1}`);
-                if (response.ok) {
-                    calendarData = await response.json();
-                }
-                
-                // Also load all data for repeat calculation and multi-day schedules
                 const allResponse = await fetch(`${API_BASE}/calendar/all`);
                 if (allResponse.ok) {
                     const allData = await allResponse.json();
-                    // Process repeat schedules
-                    processRepeatSchedules(allData, year, month);
-                    // Process multi-day schedules
-                    processMultiDaySchedules(allData, year, month);
+                    // 캐시 저장
+                    localStorage.setItem(CACHE_KEY, JSON.stringify(allData));
+                    localStorage.setItem(CACHE_TIME_KEY, Date.now().toString());
+                    // 화면 업데이트
+                    applyCalendarData(allData, year, month);
+                    renderCalendar();
                 }
             } catch (error) {
                 console.log('Failed to load calendar data');
             }
+        }
+        
+        // Apply calendar data
+        function applyCalendarData(allData, year, month) {
+            // Filter current month data
+            const prefix = `${year}-${String(month + 1).padStart(2, '0')}`;
+            calendarData = {};
+            Object.keys(allData).forEach(date => {
+                if (date.startsWith(prefix)) {
+                    calendarData[date] = allData[date];
+                }
+            });
+            // Process repeat schedules
+            processRepeatSchedules(allData, year, month);
+            // Process multi-day schedules
+            processMultiDaySchedules(allData, year, month);
+        }
+        
+        // Update cache after save
+        function updateCache(date, data) {
+            try {
+                const cached = localStorage.getItem(CACHE_KEY);
+                const allData = cached ? JSON.parse(cached) : {};
+                allData[date] = { ...allData[date], ...data };
+                localStorage.setItem(CACHE_KEY, JSON.stringify(allData));
+            } catch (e) {}
+        }
+        
+        // Clear cache
+        function clearCache() {
+            localStorage.removeItem(CACHE_KEY);
+            localStorage.removeItem(CACHE_TIME_KEY);
         }
         
         // Process multi-day schedules
@@ -2114,6 +2158,8 @@
                 if (response.ok) {
                     statusEl.textContent = '✓ 저장됨';
                     statusEl.classList.add('saved');
+                    // Clear cache to force refresh
+                    clearCache();
                     setTimeout(() => {
                         statusEl.textContent = '';
                         statusEl.classList.remove('saved');
@@ -2190,6 +2236,9 @@
                 const response = await fetch(url, { method: 'DELETE' });
                 
                 if (response.ok) {
+                    // Clear cache to force refresh
+                    clearCache();
+                    
                     if (currentView === 'monthly') {
                         renderCalendar();
                     } else {
@@ -2520,6 +2569,8 @@
                     // Clear edit state
                     delete modal.dataset.editId;
                     delete modal.dataset.editDate;
+                    // Clear cache to force refresh
+                    clearCache();
                     
                     if (currentView === 'monthly') {
                         renderCalendar();
@@ -2586,6 +2637,8 @@
                     closeModal('exerciseModal');
                     // Clear edit state
                     delete document.getElementById('exerciseModal').dataset.editing;
+                    // Clear cache to force refresh
+                    clearCache();
                     
                     if (currentView === 'monthly') {
                         renderCalendar();
@@ -2897,5 +2950,6 @@
     </script>
 </body>
 </html>
+
 
 
