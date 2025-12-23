@@ -984,13 +984,13 @@
             overflow: hidden;
             text-overflow: ellipsis;
             border-radius: 0;
-            margin: 0 -11px;
+            margin: 0 -12px;
             margin-bottom: 2px;
-            padding-left: 10px;
-            padding-right: 10px;
+            padding-left: 12px;
+            padding-right: 12px;
             box-sizing: border-box;
             position: relative;
-            z-index: 1;
+            z-index: 2;
             display: flex;
             align-items: center;
         }
@@ -998,19 +998,23 @@
         .schedule-bar.start {
             border-radius: 4px 0 0 4px;
             margin-left: 0;
-            margin-right: -11px;
+            margin-right: -12px;
+            padding-left: 6px;
         }
         
         .schedule-bar.end {
             border-radius: 0 4px 4px 0;
-            margin-left: -11px;
+            margin-left: -12px;
             margin-right: 0;
+            padding-right: 6px;
         }
         
         .schedule-bar.single {
             border-radius: 4px;
             margin-left: 0;
             margin-right: 0;
+            padding-left: 6px;
+            padding-right: 6px;
         }
         
         .schedule-bar.start.end {
@@ -1021,8 +1025,8 @@
         
         /* Middle part of multi-day bar */
         .schedule-bar:not(.start):not(.end):not(.single) {
-            margin-left: -11px;
-            margin-right: -11px;
+            margin-left: -12px;
+            margin-right: -12px;
         }
         
         .schedule-bar.private {
