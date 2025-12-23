@@ -294,6 +294,15 @@
             font-weight: 600;
             font-size: 0.9rem;
             margin-bottom: 4px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        
+        .exercise-check {
+            color: #6b8e23;
+            font-size: 0.85rem;
+            font-weight: bold;
         }
         
         .day:nth-child(7n+1) .day-number {
@@ -1947,7 +1956,13 @@
             if (isToday) dayEl.classList.add('today');
             if (holidayName) dayEl.classList.add('holiday');
             
-            let contentHtml = `<div class="day-number">${day}</div>`;
+            // Check if exercise data exists
+            const hasExercise = dayData && dayData.exercise && 
+                ((dayData.exercise.weight && dayData.exercise.weight.length > 0) || 
+                 (dayData.exercise.nonWeight && dayData.exercise.nonWeight.length > 0));
+            const exerciseCheck = hasExercise ? '<span class="exercise-check">✔</span>' : '';
+            
+            let contentHtml = `<div class="day-number">${day}${exerciseCheck}</div>`;
             
             if (!isOtherMonth) {
                 contentHtml += '<div class="day-content">';
@@ -2882,3 +2897,5 @@
     </script>
 </body>
 </html>
+
+
