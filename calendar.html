@@ -1601,8 +1601,9 @@
         
         // Initialize
         document.addEventListener('DOMContentLoaded', () => {
+            loadCacheFromStorage(); // 캐시 먼저 로드
             loadHolidays(currentYear);
-            renderCalendar();
+            renderCalendar(); // 캐시에서 즉시 렌더링 + 백그라운드 동기화
             setupEventListeners();
         });
         
@@ -1634,7 +1635,7 @@
                     currentYear--;
                     loadHolidays(currentYear);
                 }
-                renderCalendar();
+                renderCalendarFromCache(); // 캐시에서 즉시 렌더링
             });
             
             document.getElementById('nextMonth').addEventListener('click', () => {
@@ -1644,7 +1645,7 @@
                     currentYear++;
                     loadHolidays(currentYear);
                 }
-                renderCalendar();
+                renderCalendarFromCache(); // 캐시에서 즉시 렌더링
             });
             
             // Date navigation for daily view
@@ -1768,67 +1769,89 @@
         // Load Calendar Data
         // Cache keys
         const CACHE_KEY = 'calendarDataCache';
-        const CACHE_TIME_KEY = 'calendarCacheTime';
-        const CACHE_DURATION = 5 * 60 * 1000; // 5분 캐시
+        let allCachedData = {}; // 메모리 캐시
+        let isServerSynced = false;
         
-        // Load from cache first, then update from server
-        async function loadCalendarData(year, month) {
-            // 1. 로컬 캐시에서 먼저 로드 (즉시 표시)
-            const cached = localStorage.getItem(CACHE_KEY);
-            if (cached) {
-                try {
-                    const allData = JSON.parse(cached);
-                    applyCalendarData(allData, year, month);
-                } catch (e) {}
-            }
-            
-            // 2. 백그라운드에서 서버 데이터 가져오기
-            try {
-                const allResponse = await fetch(`${API_BASE}/calendar/all`);
-                if (allResponse.ok) {
-                    const allData = await allResponse.json();
-                    // 캐시 저장
-                    localStorage.setItem(CACHE_KEY, JSON.stringify(allData));
-                    localStorage.setItem(CACHE_TIME_KEY, Date.now().toString());
-                    // 화면 업데이트
-                    applyCalendarData(allData, year, month);
-                    renderCalendar();
-                }
-            } catch (error) {
-                console.log('Failed to load calendar data');
-            }
-        }
-        
-        // Apply calendar data
-        function applyCalendarData(allData, year, month) {
-            // Filter current month data
-            const prefix = `${year}-${String(month + 1).padStart(2, '0')}`;
-            calendarData = {};
-            Object.keys(allData).forEach(date => {
-                if (date.startsWith(prefix)) {
-                    calendarData[date] = allData[date];
-                }
-            });
-            // Process repeat schedules
-            processRepeatSchedules(allData, year, month);
-            // Process multi-day schedules
-            processMultiDaySchedules(allData, year, month);
-        }
-        
-        // Update cache after save
-        function updateCache(date, data) {
+        // 앱 시작 시 캐시 로드
+        function loadCacheFromStorage() {
             try {
                 const cached = localStorage.getItem(CACHE_KEY);
-                const allData = cached ? JSON.parse(cached) : {};
-                allData[date] = { ...allData[date], ...data };
-                localStorage.setItem(CACHE_KEY, JSON.stringify(allData));
+                if (cached) {
+                    allCachedData = JSON.parse(cached);
+                }
+            } catch (e) {
+                allCachedData = {};
+            }
+        }
+        
+        // 캐시를 localStorage에 저장
+        function saveCacheToStorage() {
+            try {
+                localStorage.setItem(CACHE_KEY, JSON.stringify(allCachedData));
             } catch (e) {}
         }
         
-        // Clear cache
+        // 서버에서 데이터 동기화 (백그라운드)
+        async function syncFromServer() {
+            if (isServerSynced) return; // 이미 동기화됨
+            
+            try {
+                const response = await fetch(`${API_BASE}/calendar/all`);
+                if (response.ok) {
+                    allCachedData = await response.json();
+                    saveCacheToStorage();
+                    isServerSynced = true;
+                    // 현재 뷰 새로고침
+                    if (currentView === 'monthly') {
+                        renderCalendarFromCache();
+                    }
+                }
+            } catch (error) {
+                console.log('Server sync failed, using cache');
+            }
+        }
+        
+        // 캐시에서 즉시 렌더링 (서버 호출 없음)
+        function loadCalendarDataFromCache(year, month) {
+            const prefix = `${year}-${String(month + 1).padStart(2, '0')}`;
+            calendarData = {};
+            Object.keys(allCachedData).forEach(date => {
+                if (date.startsWith(prefix)) {
+                    calendarData[date] = allCachedData[date];
+                }
+            });
+            processRepeatSchedules(allCachedData, year, month);
+            processMultiDaySchedules(allCachedData, year, month);
+        }
+        
+        // 캐시 직접 업데이트 (낙관적 업데이트)
+        function updateCacheData(date, field, value) {
+            if (!allCachedData[date]) {
+                allCachedData[date] = { schedules: [], exercise: null };
+            }
+            if (field === 'schedule_add') {
+                if (!allCachedData[date].schedules) allCachedData[date].schedules = [];
+                allCachedData[date].schedules.push(value);
+            } else if (field === 'schedule_update') {
+                const idx = allCachedData[date].schedules?.findIndex(s => s.id === value.id);
+                if (idx >= 0) allCachedData[date].schedules[idx] = value;
+            } else if (field === 'schedule_delete') {
+                allCachedData[date].schedules = allCachedData[date].schedules?.filter(s => s.id !== value) || [];
+            } else if (field === 'exercise') {
+                allCachedData[date].exercise = value;
+            } else if (field === 'exercise_delete') {
+                allCachedData[date].exercise = null;
+            } else if (field === 'memo') {
+                allCachedData[date].memo = value;
+            }
+            saveCacheToStorage();
+        }
+        
+        // 캐시 초기화
         function clearCache() {
+            allCachedData = {};
+            isServerSynced = false;
             localStorage.removeItem(CACHE_KEY);
-            localStorage.removeItem(CACHE_TIME_KEY);
         }
         
         // Process multi-day schedules
@@ -1951,8 +1974,22 @@
         }
         
         // Render Calendar
+        // 캐시에서 즉시 렌더링하는 버전
+        function renderCalendarFromCache() {
+            loadCalendarDataFromCache(currentYear, currentMonth);
+            renderCalendarUI();
+        }
+        
+        // 서버 동기화 후 렌더링 (최초 로딩 시)
         async function renderCalendar() {
-            await loadCalendarData(currentYear, currentMonth);
+            loadCalendarDataFromCache(currentYear, currentMonth);
+            renderCalendarUI();
+            // 백그라운드에서 서버 동기화
+            syncFromServer();
+        }
+        
+        // 실제 UI 렌더링
+        function renderCalendarUI() {
             
             const monthYearEl = document.getElementById('monthYear');
             monthYearEl.textContent = `${currentYear}년 ${currentMonth + 1}월`;
@@ -2152,28 +2189,25 @@
             const statusEl = document.getElementById('memoStatus');
             const memo = textarea.value;
             
+            // 낙관적 업데이트: 즉시 캐시 업데이트
+            updateCacheData(selectedDate, 'memo', memo);
+            statusEl.textContent = '✓ 저장됨';
+            statusEl.classList.add('saved');
+            setTimeout(() => {
+                statusEl.textContent = '';
+                statusEl.classList.remove('saved');
+            }, 2000);
+            
+            // 백그라운드에서 서버 저장
             try {
-                const response = await fetch(`${API_BASE}/calendar/${selectedDate}/memo`, {
+                await fetch(`${API_BASE}/calendar/${selectedDate}/memo`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ memo })
                 });
-                
-                if (response.ok) {
-                    statusEl.textContent = '✓ 저장됨';
-                    statusEl.classList.add('saved');
-                    // Clear cache to force refresh
-                    clearCache();
-                    setTimeout(() => {
-                        statusEl.textContent = '';
-                        statusEl.classList.remove('saved');
-                    }, 2000);
-                } else {
-                    statusEl.textContent = '저장 실패';
-                }
+                isServerSynced = false;
             } catch (error) {
-                console.error('Error saving memo:', error);
-                statusEl.textContent = '서버 연결 실패';
+                console.log('Server save pending');
             }
         }
         
@@ -2214,7 +2248,7 @@
             }
         }
         
-        // Delete item
+        // Delete item (낙관적 업데이트)
         async function deleteItem() {
             document.getElementById('contextMenu').classList.remove('active');
             
@@ -2226,34 +2260,36 @@
             
             if (!confirm(confirmMsg)) return;
             
+            // 낙관적 업데이트: 즉시 캐시에서 삭제
+            if (contextMenuTarget.type === 'schedule') {
+                const deleteDate = contextMenuTarget.data.originalDate || contextMenuTarget.date;
+                const deleteId = contextMenuTarget.data.repeatFrom || contextMenuTarget.id;
+                updateCacheData(deleteDate, 'schedule_delete', deleteId);
+            } else {
+                updateCacheData(contextMenuTarget.date, 'exercise_delete', null);
+            }
+            
+            // 즉시 UI 업데이트
+            if (currentView === 'monthly') {
+                renderCalendarFromCache();
+            } else {
+                renderDailyView();
+            }
+            
+            // 백그라운드에서 서버 삭제
             try {
                 let url;
                 if (contextMenuTarget.type === 'schedule') {
-                    // If it's a repeat instance, delete from original date
                     const deleteDate = contextMenuTarget.data.originalDate || contextMenuTarget.date;
                     const deleteId = contextMenuTarget.data.repeatFrom || contextMenuTarget.id;
                     url = `${API_BASE}/calendar/${deleteDate}/schedule/${deleteId}`;
                 } else {
                     url = `${API_BASE}/calendar/${contextMenuTarget.date}/exercise`;
                 }
-                
-                const response = await fetch(url, { method: 'DELETE' });
-                
-                if (response.ok) {
-                    // Clear cache to force refresh
-                    clearCache();
-                    
-                    if (currentView === 'monthly') {
-                        renderCalendar();
-                    } else {
-                        renderDailyView();
-                    }
-                } else {
-                    alert('삭제에 실패했습니다.');
-                }
+                await fetch(url, { method: 'DELETE' });
+                isServerSynced = false;
             } catch (error) {
-                console.error('Error deleting item:', error);
-                alert('서버 연결에 실패했습니다.');
+                console.log('Server delete pending');
             }
         }
         
@@ -2505,7 +2541,7 @@
             `;
         }
         
-        // Save Schedule
+        // Save Schedule (낙관적 업데이트)
         async function saveSchedule() {
             const content = document.getElementById('scheduleContent').value.trim();
             const modal = document.getElementById('scheduleModal');
@@ -2531,66 +2567,69 @@
             }
             
             const source = currentView === 'monthly' ? 'monthly' : 'daily';
-            
-            // Determine if it's a multi-day schedule
             const isMultiDay = startDate && endDate && startDate !== endDate;
+            const saveDate = startDate || selectedDate;
             
+            // 낙관적 업데이트: 먼저 캐시 업데이트하고 UI 즉시 갱신
+            const newSchedule = {
+                id: editId || 'temp-' + Date.now(),
+                content,
+                tag: selectedTag,
+                source,
+                repeat: selectedRepeat,
+                startDate: isMultiDay ? startDate : null,
+                endDate: isMultiDay ? endDate : null,
+                createdAt: new Date().toISOString()
+            };
+            
+            if (editId) {
+                updateCacheData(editDate, 'schedule_update', newSchedule);
+            } else {
+                updateCacheData(saveDate, 'schedule_add', newSchedule);
+            }
+            
+            // 즉시 UI 업데이트
+            closeModal('scheduleModal');
+            delete modal.dataset.editId;
+            delete modal.dataset.editDate;
+            
+            if (currentView === 'monthly') {
+                renderCalendarFromCache();
+            } else {
+                renderDailyView();
+            }
+            
+            // 백그라운드에서 서버 저장
             try {
                 let response;
-                
                 if (editId) {
-                    // Update existing schedule
                     response = await fetch(`${API_BASE}/calendar/${editDate}/schedule/${editId}`, {
                         method: 'PUT',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            content,
-                            tag: selectedTag,
-                            repeat: selectedRepeat,
-                            startDate: isMultiDay ? startDate : null,
-                            endDate: isMultiDay ? endDate : null
-                        })
+                        body: JSON.stringify({ content, tag: selectedTag, repeat: selectedRepeat, startDate: isMultiDay ? startDate : null, endDate: isMultiDay ? endDate : null })
                     });
                 } else {
-                    // Create new schedule - save to start date
-                    const saveDate = startDate || selectedDate;
                     response = await fetch(`${API_BASE}/calendar/${saveDate}/schedule`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            content,
-                            tag: selectedTag,
-                            source,
-                            repeat: selectedRepeat,
-                            startDate: isMultiDay ? startDate : null,
-                            endDate: isMultiDay ? endDate : null
-                        })
+                        body: JSON.stringify({ content, tag: selectedTag, source, repeat: selectedRepeat, startDate: isMultiDay ? startDate : null, endDate: isMultiDay ? endDate : null })
                     });
                 }
                 
                 if (response.ok) {
-                    closeModal('scheduleModal');
-                    // Clear edit state
-                    delete modal.dataset.editId;
-                    delete modal.dataset.editDate;
-                    // Clear cache to force refresh
-                    clearCache();
-                    
-                    if (currentView === 'monthly') {
-                        renderCalendar();
-                    } else {
-                        renderDailyView();
+                    const result = await response.json();
+                    // 서버에서 받은 실제 ID로 캐시 업데이트
+                    if (!editId && result.schedule) {
+                        updateCacheData(saveDate, 'schedule_update', { ...newSchedule, id: result.schedule.id });
                     }
-                } else {
-                    alert('저장에 실패했습니다.');
+                    isServerSynced = false; // 다음 동기화 시 최신 데이터 가져오기
                 }
             } catch (error) {
-                console.error('Error saving schedule:', error);
-                alert('서버 연결에 실패했습니다.');
+                console.log('Server save pending');
             }
         }
         
-        // Save Exercise
+        // Save Exercise (낙관적 업데이트)
         async function saveExercise() {
             const weightRows = document.querySelectorAll('#weightRows .weight-input-row');
             const nonWeightRows = document.querySelectorAll('#nonWeightRows .nonweight-input-row');
@@ -2626,40 +2665,35 @@
             
             const source = currentView === 'monthly' ? 'monthly' : 'daily';
             
+            // 낙관적 업데이트: 즉시 캐시 업데이트
+            const exerciseData = { weight, nonWeight, source, updatedAt: new Date().toISOString() };
+            updateCacheData(selectedDate, 'exercise', exerciseData);
+            
+            // 즉시 UI 업데이트
+            closeModal('exerciseModal');
+            delete document.getElementById('exerciseModal').dataset.editing;
+            
+            if (currentView === 'monthly') {
+                renderCalendarFromCache();
+            } else {
+                renderDailyView();
+            }
+            
+            // 백그라운드에서 서버 저장
             try {
-                const response = await fetch(`${API_BASE}/calendar/${selectedDate}/exercise`, {
+                await fetch(`${API_BASE}/calendar/${selectedDate}/exercise`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        weight,
-                        nonWeight,
-                        source
-                    })
+                    body: JSON.stringify({ weight, nonWeight, source })
                 });
-                
-                if (response.ok) {
-                    closeModal('exerciseModal');
-                    // Clear edit state
-                    delete document.getElementById('exerciseModal').dataset.editing;
-                    // Clear cache to force refresh
-                    clearCache();
-                    
-                    if (currentView === 'monthly') {
-                        renderCalendar();
-                    } else {
-                        renderDailyView();
-                    }
-                } else {
-                    alert('저장에 실패했습니다.');
-                }
+                isServerSynced = false;
             } catch (error) {
-                console.error('Error saving exercise:', error);
-                alert('서버 연결에 실패했습니다.');
+                console.log('Server save pending');
             }
         }
         
         // Render Daily View
-        async function renderDailyView() {
+        function renderDailyView() {
             const dateStr = formatDate(dailyDate.getFullYear(), dailyDate.getMonth(), dailyDate.getDate());
             selectedDate = dateStr;
             
@@ -2669,23 +2703,10 @@
             document.getElementById('currentDate').textContent = 
                 `${dailyDate.getFullYear()}년 ${dailyDate.getMonth() + 1}월 ${dailyDate.getDate()}일 (${dayName})`;
             
-            // Load data for this date
-            try {
-                const response = await fetch(`${API_BASE}/calendar/${dateStr}`);
-                let data = response.ok ? await response.json() : {};
-                
-                // Also process repeat schedules for daily view
-                const allResponse = await fetch(`${API_BASE}/calendar/all`);
-                if (allResponse.ok) {
-                    const allData = await allResponse.json();
-                    data = processRepeatForDate(allData, data, dateStr);
-                }
-                
-                renderDailyContent(data, dateStr);
-            } catch (error) {
-                console.log('Failed to load daily data');
-                renderDailyContent({}, dateStr);
-            }
+            // 캐시에서 데이터 로드 (즉시)
+            let data = allCachedData[dateStr] || {};
+            data = processRepeatForDate(allCachedData, data, dateStr);
+            renderDailyContent(data, dateStr);
         }
         
         // Process repeat schedules for a specific date
@@ -2954,6 +2975,7 @@
     </script>
 </body>
 </html>
+
 
 
 
